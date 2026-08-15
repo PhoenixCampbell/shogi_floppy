@@ -61,8 +61,9 @@ cp * /path/to/floppy/disk/
 
 ## Usage
 
-Currently using fpc `Free Pascal Compiler version 3.2.2 [2021/05/16] for x86_64` for testing and writing on modern linux systems.
+Currently using `Free Pascal Compiler version 3.2.2 [2021/05/16] for x86_64` for testing and writing on modern linux systems.
 Link to compiler for download: [Free Pascal Compiler](https://www.freepascal.org/download.html)
+
 Uses `fpc` instead of `tpc` when compiling programs.
 
 When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal (3.0/5.5) is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
