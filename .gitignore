@@ -1,0 +1,11 @@
+.git
+*.bak
+*.obj
+*.exe
+*.ppu
+*.lst
+*.dsk
+*.log
+*.tmp
+build/
+dist/
