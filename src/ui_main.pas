@@ -1,7 +1,7 @@
 unit ui_main;
 
 interface
-uses shogi_game, ai_opponent, crt; // Add 'crt' to use functions like GetMaxX and GetMaxY
+uses shogi_game, ai_opponent, crt; (* Add 'crt' to use functions like GetMaxX and GetMaxY *)
 procedure MainMenu();
 function GetUserInput: string;
 procedure SinglePlayerGame();
@@ -10,7 +10,7 @@ procedure DisplayRules();
 
 implementation
 
-// Function to center a line of text horizontally
+(* Function to center a line of text horizontally *)
 procedure CenterText(const Text: string);
 var
   ScreenWidth, ScreenHeight: integer;
@@ -19,12 +19,12 @@ begin
   ScreenHeight := GetMaxY;
   ClrScr;
 
-  // Calculate horizontal and vertical center positions
+  (* Calculate horizontal and vertical center positions *)
   GotoXY((ScreenWidth div 2) - (Length(Text) div 2), (ScreenHeight div 2));
   WriteLn(Text);
 end;
 
-// Function to write a line of text at the specified vertical offset from the center
+(* Function to write a line of text at the specified vertical offset from the center *)
 procedure WriteLine(const Text: string; VerticalOffset: integer);
 var
   ScreenWidth, ScreenHeight: integer;
@@ -32,14 +32,14 @@ begin
   ScreenWidth := GetMaxX;
   ScreenHeight := GetMaxY;
 
-  // Calculate horizontal and vertical positions
+  (* Calculate horizontal and vertical positions *)
   GotoXY((ScreenWidth div 2) - (Length(Text) div 2), (ScreenHeight div 2) + VerticalOffset);
   WriteLn(Text);
 end;
 
 procedure MainMenu();
 var
-  LineOffsets: array[1..4] of integer = (-3, 0, 3, 6); // Adjust line offsets as needed
+  LineOffsets: array[1..4] of integer = (-3, 0, 3, 6); (* Adjust line offsets as needed *)
 
 begin
   CenterText('Shogi Game - Main Menu');
@@ -67,7 +67,7 @@ var
   Board: TBoard;
   DifficultyLevel: byte;
 begin
-  SetupBoard(Board); // Initialize the board
+  SetupBoard(Board); (* Initialize the board *)
   WriteLn('Select AI difficulty (1-3): ');
   ReadLn(DifficultyLevel);
   while not GameOver do
@@ -78,7 +78,7 @@ procedure PlayerVsPlayer();
 var
   Board: TBoard;
 begin
-  SetupBoard(Board); // Initialize the board
+  SetupBoard(Board); (* Initialize the board *)
   while not GameOver do
     PlayGame(Board, True);
     PlayGame(Board, False);
@@ -105,6 +105,6 @@ begin
   ReadKey;
 end;
 
-{ Additional functions and procedures for UI }
+(* Additional functions and procedures for UI *)
 
 end.

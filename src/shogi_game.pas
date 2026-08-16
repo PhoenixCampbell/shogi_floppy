@@ -1,13 +1,19 @@
 unit shogi_game;
 
 interface
-uses crt; // screen handling
+uses crt; (* screen handling functions *)
 
 type
+  TPlayer = (NoPlayer, Sente, Gote);
   TPiece = (None, Pawn, Lance, Knight, SilverGeneral, GoldGeneral,
             PromotedSilverGeneral, PromotedKnight, PromotedLance, 
             PromotedPawn, Bishop, Rook, DragonHorse, DragonKing, King);
-  TBoard = array[1..9, 1..9] of TPiece;
+  TSquare = record
+    Piece: TPiece;
+    Owner: TPlayer;
+  end;
+  
+  TBoard = array[1..9, 1..9] of TSquare;
   
 const
   PieceValue: array[TPiece] of integer = (0, 1, 2, 3, 4, 5, 6, 7, 8,
@@ -19,31 +25,85 @@ procedure SaveGame(Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
 procedure HandleError(ErrorCode: integer);
 
-
 implementation
 
-{ Implement core game logic, rules, piece movements, etc. }
+(* Implement core game logic, rules, piece movements, etc. *)
 
 function SetupBoard: TBoard;
 var
   Row, Col: integer;
   Board: TBoard;
 begin
-  // Initialize the board with starting positions and pieces
+  (* Initialize the board with starting positions and pieces *)
   for Row := 1 to 9 do
     for Col := 1 to 9 do
-      Board[Row, Col] := None; // Set all squares to None
+    begin
+      Board[Col, Row].Piece := None; (* Set all squares to None *)
+      Board[Col, Row].Owner := NoPlayer; (* Set all owners to NoPlayer *)
+    end;
 
-  // Place initial pieces on the board (example)
-  Board[1, 1] := Pawn;
-  Board[9, 1] := Pawn;
+    (* Gote back row *)
+  Board[1,1].Piece := Lance;
+  Board[2,1].Piece := Knight;
+  Board[3,1].Piece := SilverGeneral;
+  Board[4,1].Piece := GoldGeneral;
+  Board[5,1].Piece := King;
+  Board[6,1].Piece := GoldGeneral;
+  Board[7,1].Piece := SilverGeneral;
+  Board[8,1].Piece := Knight;
+  Board[9,1].Piece := Lance;
+
+  for Col := 1 to 9 do
+    Board[Col,1].Owner := Gote;
+
+  (* Gote rook and bishop *)
+  Board[2,2].Piece := Rook;
+  Board[2,2].Owner := Gote;
+
+  Board[8,2].Piece := Bishop;
+  Board[8,2].Owner := Gote;
+
+  (* Gote pawns *)
+  for Col := 1 to 9 do
+  begin
+    Board[Col,3].Piece := Pawn;
+    Board[Col,3].Owner := Gote;
+  end;
+
+  (* Sente pawns *)
+  for Col := 1 to 9 do
+  begin
+    Board[Col,7].Piece := Pawn;
+    Board[Col,7].Owner := Sente;
+  end;
+
+  (* Sente bishop and rook *)
+  Board[2,8].Piece := Bishop;
+  Board[2,8].Owner := Sente;
+
+  Board[8,8].Piece := Rook;
+  Board[8,8].Owner := Sente;
+
+  (* Sente back row *)
+  Board[1,9].Piece := Lance;
+  Board[2,9].Piece := Knight;
+  Board[3,9].Piece := SilverGeneral;
+  Board[4,9].Piece := GoldGeneral;
+  Board[5,9].Piece := King;
+  Board[6,9].Piece := GoldGeneral;
+  Board[7,9].Piece := SilverGeneral;
+  Board[8,9].Piece := Knight;
+  Board[9,9].Piece := Lance;
+
+  for Col := 1 to 9 do
+    Board[Col,9].Owner := Sente;
 
   SetupBoard := Board; // Return initialized board
 end;
 
 procedure PlayGame(var Board: TBoard; var PlayerTurn: boolean);
 begin
-  { Implement game play logic here }
+  (* Implement game play logic here *)
 end;
 
 procedure SaveGame(Board: TBoard; FileName: string);
@@ -54,7 +114,7 @@ begin
   Assign(FileHandle, FileName);
   Rewrite(FileHandle);
   Row := 0; Col := 0;
-  // Write board state to file
+  (* Write board state to file *)
   for Row := 1 to 9 do
     for Col := 1 to 9 do
       Writeln(FileHandle, Ord(Board[Row, Col]));
@@ -70,11 +130,11 @@ begin
   Assign(FileHandle, FileName);
   Reset(FileHandle);
   Row := 0; Col := 0;
-  // Read board state from file
+  (* Read board state from file *)
   for Row := 1 to 9 do
     for Col := 1 to 9 do
       Readln(FileHandle, PieceNum);
-      Board[Row, Col] := TPiece(PieceNum);
+      Board[Col, Row] := TPiece(PieceNum);
 
   Close(FileHandle);
 end;
@@ -90,6 +150,6 @@ begin
   end;
 end;
 
-{ More functions and procedures for rules, AI logic, etc. }
+(* More functions and procedures for rules, AI logic, etc. *)
 
 end.
