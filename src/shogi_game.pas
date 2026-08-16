@@ -4,11 +4,11 @@ interface
 uses crt; // screen handling
 
 type
-  TBoard = array[1..9, 1..9] of integer;
   TPiece = (None, Pawn, Lance, Knight, SilverGeneral, GoldGeneral,
             PromotedSilverGeneral, PromotedKnight, PromotedLance, 
             PromotedPawn, Bishop, Rook, DragonHorse, DragonKing, King);
-
+  TBoard = array[1..9, 1..9] of TPiece;
+  
 const
   PieceValue: array[TPiece] of integer = (0, 1, 2, 3, 4, 5, 6, 7, 8,
                                            9, 10, 11, 12, 13, 14);
@@ -19,12 +19,26 @@ procedure SaveGame(Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
 procedure HandleError(ErrorCode: integer);
 
+
 implementation
+
 { Implement core game logic, rules, piece movements, etc. }
 
 function SetupBoard: TBoard;
+var
+  Row, Col: integer;
+  Board: TBoard;
 begin
   // Initialize the board with starting positions and pieces
+  for Row := 1 to 9 do
+    for Col := 1 to 9 do
+      Board[Row, Col] := None; // Set all squares to None
+
+  // Place initial pieces on the board (example)
+  Board[1, 1] := Pawn;
+  Board[9, 1] := Pawn;
+
+  SetupBoard := Board; // Return initialized board
 end;
 
 procedure PlayGame(var Board: TBoard; var PlayerTurn: boolean);
@@ -35,21 +49,34 @@ end;
 procedure SaveGame(Board: TBoard; FileName: string);
 var
   FileHandle: Text;
+  Row, Col: integer;
 begin
   Assign(FileHandle, FileName);
   Rewrite(FileHandle);
+  Row := 0; Col := 0;
   // Write board state to file
-  CloseFile(FileHandle);
+  for Row := 1 to 9 do
+    for Col := 1 to 9 do
+      Writeln(FileHandle, Ord(Board[Row, Col]));
+
+  Close(FileHandle);
 end;
 
 procedure LoadGame(var Board: TBoard; FileName: string);
 var
   FileHandle: Text;
+  PieceNum, Row, Col: Integer;
 begin
   Assign(FileHandle, FileName);
   Reset(FileHandle);
+  Row := 0; Col := 0;
   // Read board state from file
-  CloseFile(FileHandle);
+  for Row := 1 to 9 do
+    for Col := 1 to 9 do
+      Readln(FileHandle, PieceNum);
+      Board[Row, Col] := TPiece(PieceNum);
+
+  Close(FileHandle);
 end;
 
 procedure HandleError(ErrorCode: integer);
