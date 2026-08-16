@@ -77,11 +77,17 @@ end;
 procedure PlayerVsPlayer();
 var
   Board: TBoard;
+  CurrentPlayer: TPlayer;
 begin
   SetupBoard(Board); (* Initialize the board *)
-  while not GameOver do
-    PlayGame(Board, True);
-    PlayGame(Board, False);
+  CurrentPlayer := Sente; (* Sente starts first *)
+  repeat
+    if PlayerTurn then
+      PlayGame(Board, CurrentPlayer)
+    else
+      PlayGame(Board, CurrentPlayer);  
+    PlayerTurn := not PlayerTurn; (* Switch turns *)
+  until GameOver;
 end;
 
 procedure DisplayRules();
@@ -97,7 +103,7 @@ begin
 
   CenterText('Shogi Game Rules:');
 
-  for i := Low(TPiece) to High(TPiece) do
+  for i := 1 to 9 do
   begin
     WriteLine(PieceNames[i] + ': ' + IntToStr(PieceValue[i]), (i - Low(TPiece)) * 2);
   end;
