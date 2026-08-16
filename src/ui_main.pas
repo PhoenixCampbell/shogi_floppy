@@ -86,7 +86,7 @@ begin
       PlayGame(Board, CurrentPlayer)
     else
       PlayGame(Board, CurrentPlayer);  
-    PlayerTurn := not PlayerTurn; (* Switch turns *)
+    CurrentPlayer := not CurrentPlayer; (* Switch turns *)
   until GameOver;
 end;
 
