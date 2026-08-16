@@ -20,7 +20,8 @@ const
                                            9, 10, 11, 12, 13, 14);
 
 function SetupBoard: TBoard;
-procedure PlayGame(var Board: TBoard; var PlayerTurn: boolean);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer);
+procedure SwitchPlayer(var CurrentPlayer: TPlayer);
 procedure SaveGame(Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
 procedure HandleError(ErrorCode: integer);
@@ -101,9 +102,17 @@ begin
   SetupBoard := Board; (* Return initialized board *)
 end;
 
-procedure PlayGame(var Board: TBoard; var PlayerTurn: boolean);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer);
 begin
   (* Implement game play logic here *)
+end;
+
+procedure SwitchPlayer(var CurrentPlayer: TPlayer);
+begin
+  if CurrentPlayer = Sente then
+    CurrentPlayer := Gote
+  else
+    CurrentPlayer := Sente;
 end;
 
 procedure SaveGame(Board: TBoard; FileName: string);
@@ -113,11 +122,15 @@ var
 begin
   Assign(FileHandle, FileName);
   Rewrite(FileHandle);
-  Row := 0; Col := 0;
   (* Write board state to file *)
   for Row := 1 to 9 do
     for Col := 1 to 9 do
-      Writeln(FileHandle, Ord(Board[Row, Col]));
+      Writeln(
+        FileHandle,
+        Ord(Board[Col, Row].Piece), 
+        ' ',
+        Ord(Board[Col, Row].Owner)
+        );
 
   Close(FileHandle);
 end;
@@ -125,16 +138,18 @@ end;
 procedure LoadGame(var Board: TBoard; FileName: string);
 var
   FileHandle: Text;
-  PieceNum, Row, Col: Integer;
+  PieceNum, OwnerNum, Row, Col: Integer;
 begin
   Assign(FileHandle, FileName);
   Reset(FileHandle);
-  Row := 0; Col := 0;
   (* Read board state from file *)
   for Row := 1 to 9 do
     for Col := 1 to 9 do
-      Readln(FileHandle, PieceNum);
-      Board[Col, Row] := TPiece(PieceNum);
+      begin
+        Readln(FileHandle, PieceNum, OwnerNum);
+        Board[Col, Row].Piece := TPiece(PieceNum);
+        Board[Col, Row].Owner := TPlayer(OwnerNum);
+      end;
 
   Close(FileHandle);
 end;
