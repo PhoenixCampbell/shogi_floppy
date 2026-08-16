@@ -105,7 +105,7 @@ begin
 
   for i := 1 to 9 do
   begin
-    WriteLine(PieceNames[i] + ': ' + IntToStr(PieceValue[i]), (i - Low(TPiece)) * 2);
+    WriteLine(PieceNames[i] + ': ' + IntToStr(PieceValue[i]), (i - 1) * 2);
   end;
 
   ReadKey;
