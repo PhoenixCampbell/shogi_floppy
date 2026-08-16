@@ -98,7 +98,7 @@ begin
   for Col := 1 to 9 do
     Board[Col,9].Owner := Sente;
 
-  SetupBoard := Board; // Return initialized board
+  SetupBoard := Board; (* Return initialized board *)
 end;
 
 procedure PlayGame(var Board: TBoard; var PlayerTurn: boolean);
