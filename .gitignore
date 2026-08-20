@@ -7,5 +7,7 @@
 *.dsk
 *.log
 *.tmp
+*.o
+*.ppu
 build/
 dist/
