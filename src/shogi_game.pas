@@ -195,8 +195,8 @@ begin
   end;
 
   Writeln;
-  Writeln('Upper side: Gote');
-  Writeln('Lower side: Sente');
+  Writeln('Upper: Gote');
+  Writeln('Lower: Sente');
 end;
 
 procedure MakeMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer);

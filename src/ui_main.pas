@@ -83,16 +83,14 @@ var
   Board: TBoard;
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
-  GameFinished: boolean;
 begin
   Board := SetupBoard;
-
   CurrentPlayer := Sente;
-  GameFinished := False;
 
   ClrScr;
 
   Writeln('Select AI difficulty:');
+  Writeln;
   Writeln('1. Easy');
   Writeln('2. Medium');
   Writeln('3. Hard');
@@ -107,63 +105,38 @@ begin
   if DifficultyLevel > 3 then
     DifficultyLevel := 3;
 
-  while not GameFinished do
-  begin
-    if CurrentPlayer = Sente then
-    begin
-      PlayGame(Board, CurrentPlayer);
-    end
-    else
-    begin
-      PlayAI(Board, DifficultyLevel);
-    end;
+  { Draw initialized board }
+  DisplayBoard(Board);
 
-    SwitchPlayer(CurrentPlayer);
+  Writeln;
+  Writeln('Single Player vs AI');
+  Writeln('Difficulty: ', DifficultyLevel);
+  Writeln('Sente moves first.');
+  Writeln;
+  Writeln('Press any key to return to the main menu.');
 
-    (*
-      TEMPORARY:
-
-      Once IsGameOver is implemented:
-
-      GameFinished := IsGameOver(Board);
-    *)
-
-    GameFinished := True;
-  end;
+  ReadKey;
 end;
 
 procedure PlayerVsPlayer;
 var
   Board: TBoard;
   CurrentPlayer: TPlayer;
-  GameFinished: boolean;
 begin
   Board := SetupBoard;
-
   CurrentPlayer := Sente;
-  GameFinished := False;
 
-  while not GameFinished do
-  begin
-    PlayGame(
-      Board,
-      CurrentPlayer
-    );
+  { Draw initialized board }
+  DisplayBoard(Board);
 
-    SwitchPlayer(CurrentPlayer);
+  Writeln;
+  Writeln('Player vs Player');
+  Writeln('Sente moves first.');
+  Writeln;
+  Writeln('Press any key to return to the main menu.');
 
-    (*
-      TEMPORARY:
-
-      Once IsGameOver is implemented:
-
-      GameFinished := IsGameOver(Board);
-    *)
-
-    GameFinished := True;
-  end;
+  ReadKey;
 end;
-
 
 procedure DisplayRules;
 const
