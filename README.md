@@ -76,6 +76,7 @@ When testing on actual Amstrad system, a recommended combination of MS-DOS and T
    ```
 
 3. Run the compiled executable to start the game.
+
    for modern systems
 
    ```sh
