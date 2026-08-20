@@ -1,116 +1,202 @@
 unit ui_main;
 
 interface
-uses shogi_game, ai_opponent, crt; (* Add 'crt' to use functions like GetMaxX and GetMaxY *)
-procedure MainMenu();
+
+uses shogi_game, ai_opponent, crt;
+
+procedure MainMenu;
 function GetUserInput: string;
-procedure SinglePlayerGame();
-procedure PlayerVsPlayer();
-procedure DisplayRules();
+procedure SinglePlayerGame;
+procedure PlayerVsPlayer;
+procedure DisplayRules;
 
 implementation
 
-(* Function to center a line of text horizontally *)
-procedure CenterText(const Text: string);
+procedure CenterText(Text: string);
 var
-  ScreenWidth, ScreenHeight: integer;
+  ScreenWidth: integer;
 begin
-  ScreenWidth := GetMaxX;
-  ScreenHeight := GetMaxY;
-  ClrScr;
+  ScreenWidth := 80;
 
-  (* Calculate horizontal and vertical center positions *)
-  GotoXY((ScreenWidth div 2) - (Length(Text) div 2), (ScreenHeight div 2));
-  WriteLn(Text);
+  GotoXY((ScreenWidth div 2) - (Length(Text) div 2), 12);
+
+  Writeln(Text);
 end;
 
-(* Function to write a line of text at the specified vertical offset from the center *)
-procedure WriteLine(const Text: string; VerticalOffset: integer);
-var
-  ScreenWidth, ScreenHeight: integer;
-begin
-  ScreenWidth := GetMaxX;
-  ScreenHeight := GetMaxY;
 
-  (* Calculate horizontal and vertical positions *)
-  GotoXY((ScreenWidth div 2) - (Length(Text) div 2), (ScreenHeight div 2) + VerticalOffset);
-  WriteLn(Text);
+procedure WriteLine(Text: string; VerticalOffset: integer);
+var
+  ScreenWidth: integer;
+begin
+  ScreenWidth := 80;
+
+  GotoXY((ScreenWidth div 2) - (Length(Text) div 2), 12 + VerticalOffset);
+
+  Writeln(Text);
 end;
 
-procedure MainMenu();
-var
-  LineOffsets: array[1..4] of integer = (-3, 0, 3, 6); (* Adjust line offsets as needed *)
-
-begin
-  CenterText('Shogi Game - Main Menu');
-
-  WriteLine('1. Single Player vs AI', LineOffsets[1]);
-  WriteLine('2. Player vs Player', LineOffsets[2]);
-  WriteLine('3. Display Rules', LineOffsets[3]);
-  WriteLine('4. Exit', LineOffsets[4]);
-
-  case GetUserInput() of
-    '1': SinglePlayerGame();
-    '2': PlayerVsPlayer();
-    '3': DisplayRules();
-    '4': Halt;
-  end;
-end;
 
 function GetUserInput: string;
-begin
-  ReadLn(Result);
-end;
-
-procedure SinglePlayerGame();
 var
-  Board: TBoard;
-  DifficultyLevel: byte;
+  UserInput: string;
 begin
-  SetupBoard(Board); (* Initialize the board *)
-  WriteLn('Select AI difficulty (1-3): ');
-  ReadLn(DifficultyLevel);
-  while not GameOver do
-    PlayAI(Board, DifficultyLevel);
+  Readln(UserInput);
+  GetUserInput := UserInput;
 end;
 
-procedure PlayerVsPlayer();
+
+procedure MainMenu;
+var
+  UserChoice: string;
+begin
+  repeat
+    ClrScr;
+
+    CenterText('Shogi Game - Main Menu');
+
+    WriteLine('1. Single Player vs AI', 2);
+    WriteLine('2. Player vs Player', 4);
+    WriteLine('3. Display Rules', 6);
+    WriteLine('4. Exit', 8);
+
+    GotoXY(1, 22);
+    Write('Select option: ');
+
+    UserChoice := GetUserInput;
+
+    if Length(UserChoice) > 0 then
+    begin
+      case UserChoice[1] of
+        '1': SinglePlayerGame;
+        '2': PlayerVsPlayer;
+        '3': DisplayRules;
+        '4': Halt;
+      end;
+    end;
+
+  until False;
+end;
+
+
+procedure SinglePlayerGame;
 var
   Board: TBoard;
   CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
+  GameFinished: boolean;
 begin
-  SetupBoard(Board); (* Initialize the board *)
-  CurrentPlayer := Sente; (* Sente starts first *)
-  repeat
-    if PlayerTurn then
-      PlayGame(Board, CurrentPlayer)
+  Board := SetupBoard;
+
+  CurrentPlayer := Sente;
+  GameFinished := False;
+
+  ClrScr;
+
+  Writeln('Select AI difficulty:');
+  Writeln('1. Easy');
+  Writeln('2. Medium');
+  Writeln('3. Hard');
+  Writeln;
+  Write('Difficulty: ');
+
+  Readln(DifficultyLevel);
+
+  if DifficultyLevel < 1 then
+    DifficultyLevel := 1;
+
+  if DifficultyLevel > 3 then
+    DifficultyLevel := 3;
+
+  while not GameFinished do
+  begin
+    if CurrentPlayer = Sente then
+    begin
+      PlayGame(Board, CurrentPlayer);
+    end
     else
-      PlayGame(Board, CurrentPlayer);  
-    CurrentPlayer := not CurrentPlayer; (* Switch turns *)
-  until GameOver;
+    begin
+      PlayAI(Board, DifficultyLevel);
+    end;
+
+    SwitchPlayer(CurrentPlayer);
+
+    (*
+      TEMPORARY:
+
+      Once IsGameOver is implemented:
+
+      GameFinished := IsGameOver(Board);
+    *)
+
+    GameFinished := True;
+  end;
 end;
 
-procedure DisplayRules();
+procedure PlayerVsPlayer;
+var
+  Board: TBoard;
+  CurrentPlayer: TPlayer;
+  GameFinished: boolean;
+begin
+  Board := SetupBoard;
+
+  CurrentPlayer := Sente;
+  GameFinished := False;
+
+  while not GameFinished do
+  begin
+    PlayGame(
+      Board,
+      CurrentPlayer
+    );
+
+    SwitchPlayer(CurrentPlayer);
+
+    (*
+      TEMPORARY:
+
+      Once IsGameOver is implemented:
+
+      GameFinished := IsGameOver(Board);
+    *)
+
+    GameFinished := True;
+  end;
+end;
+
+
+procedure DisplayRules;
 const
-  PieceNames: array[TPiece] of string = ('None', 'Pawn', 'Lance', 'Knight', 'SilverGeneral', 'GoldGeneral',
-                                         'PromotedSilverGeneral', 'PromotedKnight', 'PromotedLance',
-                                         'PromotedPawn', 'Bishop', 'Rook', 'DragonHorse', 'DragonKing');
+  PieceNames: array[TPiece] of string[24] =
+    ('None', 'Pawn', 'Lance', 'Knight', 'Silver General', 'Gold General', 'Promoted Silver', 'Promoted Knight',
+      'Promoted Lance', 'Promoted Pawn', 'Bishop', 'Rook', 'Dragon Horse',
+      'Dragon King', 'King'
+    );
 
 var
-  i: byte;
+  Piece: TPiece;
 begin
   ClrScr;
 
-  CenterText('Shogi Game Rules:');
+  Writeln('Shogi Game - Piece Values');
+  Writeln;
+  Writeln('Piece                     Value');
+  Writeln('------------------------  -----');
 
-  for i := 1 to 9 do
+
+  for Piece := Pawn to King do
   begin
-    WriteLine(PieceNames[i] + ': ' + IntToStr(PieceValue[i]), (i - 1) * 2);
+    Write(PieceNames[Piece]);
+
+    GotoXY(28, WhereY);
+
+    Writeln(PieceValue[Piece]);
   end;
+
+  Writeln;
+  Writeln('Press any key to return.');
 
   ReadKey;
 end;
-
-(* Additional functions and procedures for UI *)
 
 end.
