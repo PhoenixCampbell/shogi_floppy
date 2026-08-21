@@ -19,25 +19,25 @@ type
 const PieceValue: array[TPiece] of integer =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
 
-function SetupBoard: TBoard;
 function IsInsideBoard(Col, Row: integer): boolean;
-function IsValidMove(Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
+function IsValidMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
 function PieceToChar(Piece: TPiece): char;
 
-procedure DisplayBoard(Board: TBoard);
+procedure SetupBoard(var Board: TBoard);
+procedure DisplayBoard(var Board: TBoard);
 procedure MakeMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer);
 procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
-procedure SaveGame(Board: TBoard; FileName: string);
+procedure SaveGame(var Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
 procedure HandleError(ErrorCode: integer);
 implementation
 
 
-function SetupBoard: TBoard;
+procedure SetupBoard(var Board: TBoard);
 var
   Row, Col: integer;
-  Board: TBoard;
+
 begin
   (* Clear board *)
   for Row := 1 to 9 do
@@ -97,8 +97,6 @@ begin
   for Col := 1 to 9 do
     Board[Col,9].Owner := Sente;
 
-
-  SetupBoard := Board;
 end;
 
 function IsInsideBoard(Col, Row: integer): boolean;
@@ -106,7 +104,7 @@ begin
   IsInsideBoard := (Col >= 1) and (Col <= 9) and (Row >= 1) and (Row <= 9);
 end;
 
-function IsValidMove( Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
+function IsValidMove( var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
 begin
   IsValidMove := False;
 
@@ -163,7 +161,7 @@ begin
   end;
 end;
 
-procedure DisplayBoard(Board: TBoard);
+procedure DisplayBoard(var Board: TBoard);
 var
   Row, Col: integer;
   Symbol: char;
@@ -236,7 +234,7 @@ begin
     CurrentPlayer := Sente;
 end;
 
-procedure SaveGame(Board: TBoard; FileName: string);
+procedure SaveGame(var Board: TBoard; FileName: string);
 var
   FileHandle: Text;
   Row, Col: integer;
