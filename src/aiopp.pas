@@ -2,7 +2,7 @@ unit aiopp;
 
 interface
 
-uses shogigam, crt;
+uses shogigam;
 
 procedure PlayAI(var Board: TBoard; DifficultyLevel: byte);
 
@@ -111,7 +111,7 @@ begin
   end;
 end;
 
-function EvaluateBoard(Board: TBoard; AIPlayer: TPlayer): integer;
+function EvaluateBoard(var Board: TBoard; AIPlayer: TPlayer): integer;
 var
   Row, Col: integer;
   Score: integer;
@@ -139,7 +139,7 @@ begin
   EvaluateBoard := Score;
 end;
 
-function Minimax(Board: TBoard; Depth: integer; CurrentPlayer: TPlayer; AIPlayer: TPlayer; Alpha, Beta: integer): integer;
+function Minimax(var Board: TBoard; Depth: integer; CurrentPlayer: TPlayer; AIPlayer: TPlayer; Alpha, Beta: integer): integer;
 var
   FromCol, FromRow: integer;
   ToCol, ToRow: integer;
