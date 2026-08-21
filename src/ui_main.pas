@@ -2,7 +2,7 @@ unit ui_main;
 
 interface
 
-uses shogi_game, ai_opponent, crt;
+uses shogigam, aiopp, crt;
 
 procedure MainMenu;
 function GetUserInput: string;

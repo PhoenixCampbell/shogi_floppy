@@ -1,8 +1,8 @@
-unit ai_opponent;
+unit aiopp;
 
 interface
 
-uses shogi_game, crt;
+uses shogigam, crt;
 
 procedure PlayAI(var Board: TBoard; DifficultyLevel: byte);
 

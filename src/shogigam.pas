@@ -1,4 +1,4 @@
-unit shogi_game;
+unit shogigam;
 
 interface
 
