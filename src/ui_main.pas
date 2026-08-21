@@ -23,7 +23,6 @@ begin
   Writeln(Text);
 end;
 
-
 procedure WriteLine(Text: string; VerticalOffset: integer);
 var
   ScreenWidth: integer;
@@ -35,7 +34,6 @@ begin
   Writeln(Text);
 end;
 
-
 function GetUserInput: string;
 var
   UserInput: string;
@@ -43,7 +41,6 @@ begin
   Readln(UserInput);
   GetUserInput := UserInput;
 end;
-
 
 procedure MainMenu;
 var
@@ -77,7 +74,6 @@ begin
   until False;
 end;
 
-
 procedure SinglePlayerGame;
 var
   Board: TBoard;
@@ -106,15 +102,16 @@ begin
   if DifficultyLevel > 3 then
     DifficultyLevel := 3;
 
-  { Draw initialized board }
   DisplayBoard(Board);
 
-  Writeln;
-  Writeln('Single Player vs AI');
-  Writeln('Difficulty: ', DifficultyLevel);
-  Writeln('Sente moves first.');
-  Writeln;
-  Writeln('Press any key to return to the main menu.');
+  GotoXY(2, 23);
+  Write('Single Player  Difficulty: ', DifficultyLevel);
+
+  GotoXY(2, 24);
+  Write('Sente moves first.');
+
+  GotoXY(2, 25);
+  Write('Press any key to return.');
 
   Key := ReadKey;
 end;
@@ -128,14 +125,16 @@ begin
   SetupBoard(Board);
   CurrentPlayer := Sente;
 
-  { Draw initialized board }
   DisplayBoard(Board);
 
-  Writeln;
-  Writeln('Player vs Player');
-  Writeln('Sente moves first.');
-  Writeln;
-  Writeln('Press any key to return to the main menu.');
+  GotoXY(2, 23);
+  Write('Player vs Player');
+
+  GotoXY(2, 24);
+  Write('Sente moves first.');
+
+  GotoXY(2, 25);
+  Write('Press any key to return.');
 
   Key := ReadKey;
 end;

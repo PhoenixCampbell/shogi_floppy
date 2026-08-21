@@ -163,38 +163,39 @@ end;
 
 procedure DisplayBoard(var Board: TBoard);
 var
-  Row, Col: integer;
+  Row, Col, BoardLeft, BoardTop: integer;
   Symbol: char;
 begin
   ClrScr;
 
-  Writeln('                 SHOGI');
-  Writeln;
-  Writeln('       1   2   3   4   5   6   7   8   9');
-  Writeln('     +---+---+---+---+---+---+---+---+---+');
+  BoardLeft := 21;
+  BoardTop := 1;
+
+  GotoXY(BoardLeft + 15, BoardTop);
+  Write('SHOGI');
+
+  GotoXY(BoardLeft + 7, BoardTop + 1);
+  Write('1   2   3   4   5   6   7   8   9');
+
+  GotoXY(BoardLeft, BoardTop + 2);
+  Write('+---+---+---+---+---+---+---+---+---+');
 
   for Row := 1 to 9 do
   begin
-    Write('  ', Row, '  |');
+    GotoXY(BoardLeft, BoardTop + 2 + (Row * 2) - 1);
+    Write('|');
 
     for Col := 1 to 9 do
     begin
-      Symbol := PieceToChar(
-        Board[Col, Row].Piece
-      );
-
+      Symbol := PieceToChar(Board[Col, Row].Piece);
       Write(' ', Symbol, ' |');
     end;
 
-    Writeln;
-    Writeln(
-      '     +---+---+---+---+---+---+---+---+---+'
-    );
-  end;
+    Write(' ', Row:1);
 
-  Writeln;
-  Writeln('Upper: Gote');
-  Writeln('Lower: Sente');
+    GotoXY(BoardLeft, BoardTop + 2 + (Row * 2));
+    Write('+---+---+---+---+---+---+---+---+---+');
+  end;
 end;
 
 procedure MakeMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer);
