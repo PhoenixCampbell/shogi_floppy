@@ -84,7 +84,7 @@ var
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
 begin
-  Board := SetupBoard;
+  SetupBoard(Board);
   CurrentPlayer := Sente;
 
   ClrScr;
@@ -123,7 +123,7 @@ var
   Board: TBoard;
   CurrentPlayer: TPlayer;
 begin
-  Board := SetupBoard;
+  SetupBoard(Board);
   CurrentPlayer := Sente;
 
   { Draw initialized board }
