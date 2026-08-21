@@ -83,6 +83,7 @@ var
   Board: TBoard;
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
+  Key: char;
 begin
   SetupBoard(Board);
   CurrentPlayer := Sente;
@@ -115,13 +116,14 @@ begin
   Writeln;
   Writeln('Press any key to return to the main menu.');
 
-  ReadKey;
+  Key := ReadKey;
 end;
 
 procedure PlayerVsPlayer;
 var
   Board: TBoard;
   CurrentPlayer: TPlayer;
+  Key: char;
 begin
   SetupBoard(Board);
   CurrentPlayer := Sente;
@@ -135,7 +137,7 @@ begin
   Writeln;
   Writeln('Press any key to return to the main menu.');
 
-  ReadKey;
+  Key := ReadKey;
 end;
 
 procedure DisplayRules;
@@ -148,6 +150,7 @@ const
 
 var
   Piece: TPiece;
+  Key: char;
 begin
   ClrScr;
 
@@ -169,7 +172,7 @@ begin
   Writeln;
   Writeln('Press any key to return.');
 
-  ReadKey;
+  Key := ReadKey;
 end;
 
 end.
