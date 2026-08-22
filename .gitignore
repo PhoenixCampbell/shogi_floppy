@@ -2,12 +2,9 @@
 *.bak
 *.obj
 *.exe
-*.ppu
 *.lst
 *.dsk
 *.log
 *.tmp
-*.o
-*.ppu
 build/
 dist/
