@@ -54,6 +54,7 @@ cp * /path/to/floppy/disk/
 
 ### Important Files to Use
 
+- `main.exe`: file used to run the game
 - `main.pas`: The entry point of the game.
 - `shogi_game.pas`: Contains core logic and rules for the Shogi game.
 - `ui_main.pas`: Handles user interface, including menus and gameplay options.
@@ -68,12 +69,23 @@ Uses `fpc` instead of `tpc` when compiling programs.
 
 When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal (3.0/5.5) is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
 
+**NOW OPTIONAL OR FOR DEVELOPMENT**
+
 1. Once you have copied the necessary files onto your floppy disk, ensure that Turbo Pascal is installed.
+
+   ```sh
+   tpc
+   ```
+
+   should return version
+
 2. Compile the `main.pas` file using Turbo Pascal:
 
    ```sh
    tpc main.pas
    ```
+
+**Running the Game**
 
 3. Run the compiled executable to start the game.
 
@@ -86,7 +98,7 @@ When testing on actual Amstrad system, a recommended combination of MS-DOS and T
    for older systems
 
    ```sh
-   main.exe
+   main
    ```
 
 ## Project Structure
@@ -96,6 +108,7 @@ When testing on actual Amstrad system, a recommended combination of MS-DOS and T
   - `shogi_game.pas`: Core logic, rules, and piece movements.
   - `ui_main.pas`: User interface and gameplay options.
   - `ai_opponent.pas`: Logic for computer opponent ranging in difficulty.
+  - Any extra files are from compiling or are main executable. These .o, .ppu, and .exe files change with each compilation.
 
 ## Contributing
 
