@@ -69,7 +69,7 @@ Uses `fpc` instead of `tpc` when compiling programs.
 
 When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal (3.0/5.5) is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
 
-**NOW OPTIONAL OR FOR DEVELOPMENT**
+**_NOW OPTIONAL OR FOR DEVELOPMENT_**
 
 1. Once you have copied the necessary files onto your floppy disk, ensure that Turbo Pascal is installed.
 
