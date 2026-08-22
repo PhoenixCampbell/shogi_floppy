@@ -171,11 +171,11 @@ begin
   BoardLeft := 21;
   BoardTop := 1;
 
-  GotoXY(BoardLeft + 15, BoardTop);
+  GotoXY(BoardLeft + 16, BoardTop);
   Write('SHOGI');
 
-  GotoXY(BoardLeft + 7, BoardTop + 1);
-  Write('1   2   3   4   5   6   7   8   9');
+  GotoXY(BoardLeft + 2, BoardTop + 1);
+  Write('9   8   7   6   5   4   3   2   1');
 
   GotoXY(BoardLeft, BoardTop + 2);
   Write('+---+---+---+---+---+---+---+---+---+');
