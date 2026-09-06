@@ -37,7 +37,6 @@ implementation
 procedure SetupBoard(var Board: TBoard);
 var
   Row, Col: integer;
-
 begin
   (* Clear board *)
   for Row := 1 to 9 do
@@ -134,27 +133,229 @@ begin
     Exit;
 
   (* piece specific rules *)
+  case Board[FromCol, FromRow].Piece of
+    Pawn:
+      begin
+        (* one step forward *)
+        if CurrentPlayer = Sente then
+          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow + 1)
+        else
+          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow - 1);
+      end;
 
-  IsValidMove := True;
+    Lance:
+      begin
+        (* any number steps only forward *)
+        if CurrentPlayer = Sente then
+          IsValidMove := (ToCol = FromCol) and (ToRow > FromRow)
+        else
+          IsValidMove := (ToCol = FromCol) and (ToRow < FromRow);
+      end;
+
+    Knight:
+      begin
+        (* two steps forward and one step left or right *)
+        IsValidMove := ((ToCol = FromCol + 2) and (Abs(ToRow - FromRow) = 1)) or
+                      ((ToCol = FromCol - 2) and (Abs(ToRow - FromRow) = 1)) or
+                      ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 2)) or
+                      ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 2));
+      end;
+
+    SilverGeneral:
+      begin
+        (* one step diagonally any direction or straight ahead *)
+        IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
+                      ((ToCol = FromCol) and ((CurrentPlayer = Sente) and (ToRow = FromRow + 1) or 
+                      (CurrentPlayer = Gote) and (ToRow = FromRow - 1)));
+      end;
+
+    GoldGeneral:
+      begin
+        (* one step all directions execpt diagonal backward *)
+        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+      end;
+
+    Bishop:
+      begin
+        (* any number of steps diagonally*)
+        IsValidMove := Abs(ToCol - FromCol) = Abs(ToRow - FromRow);
+      end;
+
+    Rook:
+      begin
+        (* vertical or horizontal any number of steps*)
+        IsValidMove := (ToCol = FromCol) or (ToRow = FromRow);
+      end;
+
+    King:
+      begin
+        (* one step any direction*)
+        IsValidMove := (Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1);
+      end;
+
+    PromotedPawn:
+      begin
+        (* moves like Gold General *)
+        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+      end;
+
+    PromotedLance:
+      begin
+        (* moves like Gold General *)
+        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+      end;
+
+    PromotedKnight:
+      begin
+        (* moves like Gold General *)
+        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+      end;
+
+    PromotedSilverGeneral:
+      begin
+        (* moves like Gold General *)
+        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
+                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
+                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+      end;
+
+    DragonHorse:
+      begin
+        (* moves like Bishop and one step orthogonally *)
+        IsValidMove := (Abs(ToCol - FromCol) = Abs(ToRow - FromRow)) or
+                      ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1));
+      end;
+
+    DragonKing:
+      begin
+        (* moves like Rook and one step diagonally *)
+        IsValidMove := (ToCol = FromCol) or (ToRow = FromRow) or
+                      ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1));
+      end;
+    else
+      IsValidMove := False;
+  end;
 end;
 
 function PieceToChar(Piece: TPiece): char;
 begin
   case Piece of
-    Pawn: PieceToChar := 'P';
-    Lance: PieceToChar := 'L';
-    Knight: PieceToChar := 'N';
-    SilverGeneral: PieceToChar := 'S';
-    GoldGeneral: PieceToChar := 'G';
-    Bishop: PieceToChar := 'B';
-    Rook: PieceToChar := 'R';
-    King: PieceToChar := 'K';
-    PromotedPawn: PieceToChar := 'T';
-    PromotedLance: PieceToChar := 'M';
-    PromotedKnight: PieceToChar := 'Q';
-    PromotedSilverGeneral: PieceToChar := 'V';
-    DragonHorse: PieceToChar := 'H';
-    DragonKing: PieceToChar := 'D';
+    Pawn: 
+      begin
+        if Owner = Sente then
+          PieceToChar := 'P'
+        else
+          PieceToChar := 'p';
+      end;
+    Lance: 
+      begin
+        if Owner = Sente then
+          PieceToChar := 'L'
+        else
+          PieceToChar := 'l';
+      end;
+    Knight:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'N'
+        else
+          PieceToChar := 'n';
+      end;
+    SilverGeneral:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'S'
+        else
+          PieceToChar := 's';
+      end;
+    GoldGeneral:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'G'
+        else
+          PieceToChar := 'g';
+      end;
+    Bishop:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'B'
+        else
+          PieceToChar := 'b';
+      end;
+    Rook:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'R'
+        else
+          PieceToChar := 'r';
+      end;
+    King:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'K'
+        else
+          PieceToChar := 'k';
+      end;
+    PromotedPawn:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'T'
+        else
+          PieceToChar := 't';
+      end;
+    PromotedLance:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'M'
+        else
+          PieceToChar := 'm';
+      end;
+    PromotedKnight:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'Q'
+        else
+          PieceToChar := 'q';
+      end;
+    PromotedSilverGeneral:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'V'
+        else
+          PieceToChar := 'v';
+      end;
+    DragonHorse:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'H'
+        else
+          PieceToChar := 'h';
+      end;
+    DragonKing:
+      begin
+        if Owner = Sente then
+          PieceToChar := 'D'
+        else
+          PieceToChar := 'd';
+      end;
 
     else
       PieceToChar := ' ';
@@ -187,7 +388,7 @@ begin
 
     for Col := 1 to 9 do
     begin
-      Symbol := PieceToChar(Board[Col, Row].Piece);
+      Symbol := PieceToChar(Board[Col, Row].Piece, Board[Col, Row].Owner);
       Write(' ', Symbol, ' |');
     end;
 
@@ -211,20 +412,34 @@ begin
 end;
 
 procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer);
+var
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Key: char;
 begin
-  (*
-    Human move input will be implemented here.
+  SetupBoard(Board);
+  ClrScr;
+  CurrentPlayer := Sente;
 
-    Eventually this procedure will:
+  repeat
+    DisplayBoard(Board); (* Game loop, start by displaying board, asking to-from questions *)
 
-      1. Display the board.
-      2. Ask for a source square.
-      3. Ask for a destination square.
-      4. Call IsValidMove.
-      5. Call MakeMove.
-      6. Handle promotion.
-      7. Handle captures/drops.
-  *)
+    WriteLn('Enter the column and row of the piece you want to move (e.g., "3 2"): ');
+    FromCol := GetUserInput('Integer'); (* Get integer input *)
+    FromRow := GetUserInput('Integer');
+    WriteLn('Enter the column and row where you want to move the piece (e.g., "3 4"): ');
+    ToCol := GetUserInput('Integer');
+    ToRow := GetUserInput('Integer');
+
+    (* check if valid *)
+    if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
+    begin
+      MakeMove(Board, FromCol, FromRow, ToCol, ToRow);
+      SwitchPlayer(CurrentPlayer);
+    end
+    else
+      HandleError(1);
+
+  until False; // Continue looping until a break condition is met
 end;
 
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
