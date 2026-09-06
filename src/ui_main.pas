@@ -149,7 +149,7 @@ var
 begin
   ClrScr;
 
-  WriteLn('Shogi Game - Piece Values');
+  Writeln('Shogi Game - Piece Values');
   Writeln;
   Writeln('Piece                     Value');
   Writeln('------------------------  -----');
