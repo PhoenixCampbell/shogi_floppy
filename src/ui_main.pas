@@ -34,12 +34,30 @@ begin
   Writeln(Text);
 end;
 
-function GetUserInput: string;
+function GetUserInput(ExpectedType: string): Variant;
 var
   UserInput: string;
+  ChoiceInt: Integer;
 begin
-  Readln(UserInput);
-  GetUserInput := UserInput;
+  repeat
+    Readln(UserInput);
+    case ExpectedType of
+      'Integer':
+        if TryStrToInt(UserInput, ChoiceInt) then (* Check if input is an integer *)
+          Exit(ChoiceInt)
+        else
+          WriteLn('Invalid input. Please enter a valid integer.');
+
+      'Char':
+        if Length(UserInput) = 1 then (* check for char input *)
+          Exit(UserInput[1])
+        else
+          WriteLn('Invalid input. Please enter a single character.');
+
+    else
+      Exit(UserInput); (* Default case: return the input as a string *)
+    end;
+  until False; (* Repeat until valid input is provided *)
 end;
 
 procedure MainMenu;
@@ -59,16 +77,13 @@ begin
     GotoXY(1, 22);
     Write('Select option: ');
 
-    UserChoice := GetUserInput;
+    UserChoice := GetUserInput('Integer'); (* Get integer input *)
 
-    if Length(UserChoice) > 0 then
-    begin
-      case UserChoice[1] of
-        '1': SinglePlayerGame;
-        '2': PlayerVsPlayer;
-        '3': DisplayRules;
-        '4': Halt;
-      end;
+    case UserChoice of
+      '1': SinglePlayerGame;
+      '2': PlayerVsPlayer;
+      '3': DisplayRules;
+      '4': Halt;
     end;
 
   until False;
@@ -79,41 +94,33 @@ var
   Board: TBoard;
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
-  Key: char;
 begin
   SetupBoard(Board);
   CurrentPlayer := Sente;
 
   ClrScr;
 
-  Writeln('Select AI difficulty:');
+  CenterText('Select AI difficulty:');
   Writeln;
   Writeln('1. Easy');
   Writeln('2. Medium');
   Writeln('3. Hard');
-  Writeln;
-  Write('Difficulty: ');
 
-  Readln(DifficultyLevel);
+  repeat
+    GotoXY(1, 22);
+    Write('Difficulty: ');
 
-  if DifficultyLevel < 1 then
-    DifficultyLevel := 1;
+    DifficultyLevel := GetUserInput('Integer'); (* Get integer input *)
 
-  if DifficultyLevel > 3 then
-    DifficultyLevel := 3;
+    if (DifficultyLevel < 1) or (DifficultyLevel > 3) then
+      WriteLn('Invalid input. Please enter a number between 1 and 3.');
 
-  DisplayBoard(Board);
+  until (DifficultyLevel >= 1) and (DifficultyLevel <= 3);
 
-  GotoXY(2, 23);
-  Write('Single Player  Difficulty: ', DifficultyLevel);
+  (* WriteLn('Single Player  Difficulty: ', DifficultyLevel); *)
+  WriteLn('Sente moves first.');
 
-  GotoXY(2, 24);
-  Write('Sente moves first.');
-
-  GotoXY(2, 25);
-  Write('Press any key to return.');
-
-  Key := ReadKey;
+  PlayGame(Board, CurrentPlayer);
 end;
 
 procedure PlayerVsPlayer;
@@ -125,18 +132,7 @@ begin
   SetupBoard(Board);
   CurrentPlayer := Sente;
 
-  DisplayBoard(Board);
-
-  GotoXY(2, 23);
-  Write('Player vs Player');
-
-  GotoXY(2, 24);
-  Write('Sente moves first.');
-
-  GotoXY(2, 25);
-  Write('Press any key to return.');
-
-  Key := ReadKey;
+  PlayGame(Board, CurrentPlayer);
 end;
 
 procedure DisplayRules;
@@ -153,7 +149,7 @@ var
 begin
   ClrScr;
 
-  Writeln('Shogi Game - Piece Values');
+  WriteLn('Shogi Game - Piece Values');
   Writeln;
   Writeln('Piece                     Value');
   Writeln('------------------------  -----');
@@ -169,7 +165,7 @@ begin
   end;
 
   Writeln;
-  Writeln('Press any key to return.');
+  Write('Press any key to return.');
 
   Key := ReadKey;
 end;
