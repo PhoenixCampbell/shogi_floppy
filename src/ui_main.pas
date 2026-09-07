@@ -2,83 +2,14 @@ unit ui_main;
 
 interface
 
-uses shogigam, aiopp, crt;
+uses shogigam, aiopp, util, crt;
 
 procedure MainMenu;
-function GetStringInput: string;
-function GetIntegerInput: Integer;
-function GetCharInput: Char;
 procedure SinglePlayerGame;
 procedure PlayerVsPlayer;
 procedure DisplayRules;
 
 implementation
-
-procedure CenterText(Text: string);
-var
-  ScreenWidth: integer;
-begin
-  ScreenWidth := 80;
-
-  GotoXY((ScreenWidth div 2) - (Length(Text) div 2), 12);
-
-  Writeln(Text);
-end;
-
-procedure WriteLine(Text: string; VerticalOffset: integer);
-var
-  ScreenWidth: integer;
-begin
-  ScreenWidth := 80;
-
-  GotoXY((ScreenWidth div 2) - (Length(Text) div 2), 12 + VerticalOffset);
-
-  Writeln(Text);
-end;
-
-function GetStringInput: string;
-var
-  Input: string;
-begin
-  Readln(Input);
-  GetStringInput := Input;
-end;
-
-
-function GetIntegerInput: Integer;
-var
-  Input: string;
-  Value: Integer;
-  ErrorCode: Integer;
-begin
-  repeat
-    Readln(Input);
-
-    Val(Input, Value, ErrorCode);
-
-    if ErrorCode <> 0 then
-      Write('Invalid input. Please enter an integer: ');
-
-  until ErrorCode = 0;
-
-  GetIntegerInput := Value;
-end;
-
-
-function GetCharInput: Char;
-var
-  Input: string;
-begin
-  repeat
-    Readln(Input);
-
-    if Length(Input) <> 1 then
-      Write('Invalid input. Please enter one character: ');
-
-  until Length(Input) = 1;
-
-  GetCharInput := Input[1];
-end;
 
 procedure MainMenu;
 var
@@ -200,10 +131,7 @@ begin
     Writeln(PieceValue[Piece]);
   end;
 
-  Writeln;
-  Write('Press any key to return.');
-
-  Key := ReadKey;
+  PauseForUser;
 end;
 
 end.

@@ -2,7 +2,8 @@ unit shogigam;
 
 interface
 
-uses crt;
+
+uses util, crt;
 
 type
   TPlayer = (NoPlayer, Sente, Gote);
@@ -185,7 +186,7 @@ begin
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
-(* maybe make a function for gold so all pieces that move like it follow the same logic instead of rewriting *)
+    (* maybe make a function for gold so all pieces that move like it follow the same logic instead of rewriting *)
     Bishop:
       begin
         (* any number of steps diagonally*)
@@ -455,37 +456,37 @@ begin
         Write('From column (1-9): ');
         FromCol := GetIntegerInput;
 
-        if (FromCol < 1) or (FromCol > 9) then
+        if not InRange(FromCol, 1, 9) then
         Writeln('Column must be between 1 and 9.');
 
-      until (FromCol >= 1) and (FromCol <= 9);
+      until InRange(FromCol, 1, 9);
 
       repeat
         Write('From row (1-9): ');
         FromRow := GetIntegerInput;
 
-        if (FromRow < 1) or (FromRow > 9) then
-        Writeln('Row must be between 1 and 9.');
+        if not InRange(FromRow, 1, 9) then
+          Writeln('Row must be between 1 and 9.');
 
-      until (FromRow >= 1) and (FromRow <= 9);
+      until InRange(FromRow, 1, 9);
 
       repeat
         Write('To column (1-9): ');
         ToCol := GetIntegerInput;
 
-        if (ToCol < 1) or (ToCol > 9) then
-        Writeln('Column must be between 1 and 9.');
+        if not InRange(ToCol, 1, 9) then
+          Writeln('Column must be between 1 and 9.');
 
-      until (ToCol >= 1) and (ToCol <= 9);
+      until InRange(ToCol, 1, 9);
 
       repeat
         Write('To row (1-9): ');
         ToRow := GetIntegerInput;
 
-        if (ToRow < 1) or (ToRow > 9) then
-        Writeln('Row must be between 1 and 9.');
+        if not InRange(ToRow, 1, 9) then
+          Writeln('Row must be between 1 and 9.');
 
-      until (ToRow >= 1) and (ToRow <= 9);
+      until InRange(ToRow, 1, 9);
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
       begin
