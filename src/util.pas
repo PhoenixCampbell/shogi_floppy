@@ -56,9 +56,9 @@ begin
   GetCharInput := Input[1];
 end;
 
-function InRange(Value, MinValue, MaxValue: Integer): Boolean;
+function InRange(Value, Min, Max: Integer): Boolean;
 begin
-  InRange := (Value >= MinValue) and (Value <= MaxValue);
+  InRange := (Value >= Min) and (Value <= Max);
 end;
 
 procedure CenterText(Text: string);
