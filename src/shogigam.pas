@@ -411,35 +411,52 @@ begin
   Board[FromCol, FromRow].Owner := NoPlayer;
 end;
 
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficulyLevel: byte);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
-  Key: char;
+  MoveComplete: boolean;
 begin
-  SetupBoard(Board);
-  ClrScr;
-  CurrentPlayer := Sente;
-
   repeat
-    DisplayBoard(Board); (* Game loop, start by displaying board, asking to-from questions *)
+    ClrScr;
+    DisplayBoard(Board); (* make sure before each move, show board, even before a mvoe is done *)
 
-    WriteLn('Enter the column and row of the piece you want to move (e.g., "3 2"): ');
-    FromCol := GetUserInput('Integer'); (* Get integer input *)
-    FromRow := GetUserInput('Integer');
-    WriteLn('Enter the column and row where you want to move the piece (e.g., "3 4"): ');
-    ToCol := GetUserInput('Integer');
-    ToRow := GetUserInput('Integer');
-
-    (* check if valid *)
-    if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
-    begin
-      MakeMove(Board, FromCol, FromRow, ToCol, ToRow);
-      SwitchPlayer(CurrentPlayer);
-    end
+    if CurrentPlayer = Sente then
+      Writeln('Sente''s turn.')
     else
-      HandleError(1);
+      Writeln('Gote''s turn.');
 
-  until False; // Continue looping until a break condition is met
+    MoveComplete := False;
+
+    repeat
+      repeat
+        Write('From column (1-9): ');
+        FromCol := GetUserInput('Integer');
+
+        if (FromCol < 1) or (FromCol > 9) then
+        Writeln('Column must be between 1 and 9.');
+
+      until (FromCol >= 1) and (FromCol <= 9);
+
+      if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
+      begin
+        MakeMove(Board, FromCol, FromRow, ToCol, ToRow);
+        MoveComplete := True;
+      end
+      else
+      begin
+        HandleError(1); (* Invalid move *)
+      end;
+    until MoveComplete;
+    (* Allow human to move first always, then AI moves next *)
+    (* Can be changed later to switch up who moves first for diversity but ok for now *)
+    SwitchPlayer(CurrentPlayer);
+
+    (* check if game is AI or pvp by checking if DifficultyLevel is set or not *)
+    if DifficultyLevel > 0 then
+      Exit;
+    (* Any difficulty above 0 is obviously meant to be a bot. *)
+    (* Scaleable to add more difficulty later if need be or wanted *)
+  until False;
 end;
 
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
@@ -501,5 +518,4 @@ begin
     5: WriteLn('Failed to load game.');
   end;
 end;
-
 end.
