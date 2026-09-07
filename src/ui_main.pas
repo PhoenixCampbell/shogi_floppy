@@ -40,7 +40,7 @@ function GetStringInput: string;
 var
   Input: string;
 begin
-  ReadLn(Input);
+  Readln(Input);
   GetStringInput := Input;
 end;
 
@@ -52,7 +52,7 @@ var
   ErrorCode: Integer;
 begin
   repeat
-    ReadLn(Input);
+    Readln(Input);
 
     Val(Input, Value, ErrorCode);
 
@@ -70,7 +70,7 @@ var
   Input: string;
 begin
   repeat
-    ReadLn(Input);
+    Readln(Input);
 
     if Length(Input) <> 1 then
       Write('Invalid input. Please enter one character: ');
@@ -97,13 +97,13 @@ begin
     GotoXY(1, 22);
     Write('Select option: ');
 
-    UserChoice := GetUserInput('Integer'); (* Get integer input *)
+    UserChoice := GetIntegerInput; (* Get integer input *)
 
     case UserChoice of
-      '1': SinglePlayerGame;
-      '2': PlayerVsPlayer;
-      '3': DisplayRules;
-      '4': Halt;
+      1: SinglePlayerGame;
+      2: PlayerVsPlayer;
+      3: DisplayRules;
+      4: Halt;
     end;
 
   until False;
@@ -130,16 +130,16 @@ begin
     GotoXY(1, 22);
     Write('Difficulty: ');
 
-    DifficultyLevel := GetUserInput('Integer'); (* Get integer input *)
+    DifficultyLevel := GetIntegerInput; (* Get integer input *)
 
     if (DifficultyLevel < 1) or (DifficultyLevel > 3) then
-      WriteLn('Invalid input. Please enter a number between 1 and 3.');
+      Writeln('Invalid input. Please enter a number between 1 and 3.');
 
   until (DifficultyLevel >= 1) and (DifficultyLevel <= 3);
 
-  (* WriteLn('Single Player  Difficulty: ', DifficultyLevel); *)
+  (* Writeln('Single Player  Difficulty: ', DifficultyLevel); *)
   CurrentPlayer := Sente;
-  WriteLn('Sente moves first.');
+  Writeln('Sente moves first.');
 
   repeat
     PlayGame(Board, CurrentPlayer, DifficultyLevel
@@ -149,8 +149,8 @@ begin
     begin
       ClrScr;
       DisplayBoard(Board);
-      WriteLn;
-      WriteLn('Computer is moving...');
+      Writeln;
+      Writeln('Computer is moving...');
 
       PlayAI(Board, DifficultyLevel);
 
