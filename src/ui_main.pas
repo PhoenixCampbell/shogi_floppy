@@ -5,7 +5,9 @@ interface
 uses shogigam, aiopp, crt;
 
 procedure MainMenu;
-function GetUserInput: string;
+function GetStringInput: string;
+function GetIntegerInput: Integer;
+function GetCharInput: Char;
 procedure SinglePlayerGame;
 procedure PlayerVsPlayer;
 procedure DisplayRules;
@@ -34,30 +36,48 @@ begin
   Writeln(Text);
 end;
 
-function GetUserInput(ExpectedType: string): Variant;
+function GetStringInput: string;
 var
-  UserInput: string;
-  ChoiceInt: Integer;
+  Input: string;
+begin
+  ReadLn(Input);
+  GetStringInput := Input;
+end;
+
+
+function GetIntegerInput: Integer;
+var
+  Input: string;
+  Value: Integer;
+  ErrorCode: Integer;
 begin
   repeat
-    Readln(UserInput);
-    case ExpectedType of
-      'Integer':
-        if TryStrToInt(UserInput, ChoiceInt) then (* Check if input is an integer *)
-          Exit(ChoiceInt)
-        else
-          WriteLn('Invalid input. Please enter a valid integer.');
+    ReadLn(Input);
 
-      'Char':
-        if Length(UserInput) = 1 then (* check for char input *)
-          Exit(UserInput[1])
-        else
-          WriteLn('Invalid input. Please enter a single character.');
+    Val(Input, Value, ErrorCode);
 
-    else
-      Exit(UserInput); (* Default case: return the input as a string *)
-    end;
-  until False; (* Repeat until valid input is provided *)
+    if ErrorCode <> 0 then
+      Write('Invalid input. Please enter an integer: ');
+
+  until ErrorCode = 0;
+
+  GetIntegerInput := Value;
+end;
+
+
+function GetCharInput: Char;
+var
+  Input: string;
+begin
+  repeat
+    ReadLn(Input);
+
+    if Length(Input) <> 1 then
+      Write('Invalid input. Please enter one character: ');
+
+  until Length(Input) = 1;
+
+  GetCharInput := Input[1];
 end;
 
 procedure MainMenu;
@@ -118,21 +138,37 @@ begin
   until (DifficultyLevel >= 1) and (DifficultyLevel <= 3);
 
   (* WriteLn('Single Player  Difficulty: ', DifficultyLevel); *)
+  CurrentPlayer := Sente;
   WriteLn('Sente moves first.');
 
-  PlayGame(Board, CurrentPlayer);
+  repeat
+    PlayGame(Board, CurrentPlayer, DifficultyLevel
+    );
+
+    if CurrentPlayer = Gote then
+    begin
+      ClrScr;
+      DisplayBoard(Board);
+      WriteLn;
+      WriteLn('Computer is moving...');
+
+      PlayAI(Board, DifficultyLevel);
+
+      SwitchPlayer(CurrentPlayer);
+    end;
+
+  until False;
 end;
 
 procedure PlayerVsPlayer;
 var
   Board: TBoard;
   CurrentPlayer: TPlayer;
-  Key: char;
 begin
   SetupBoard(Board);
   CurrentPlayer := Sente;
 
-  PlayGame(Board, CurrentPlayer);
+  PlayGame(Board, CurrentPlayer, 0);
 end;
 
 procedure DisplayRules;
