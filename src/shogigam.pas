@@ -430,12 +430,39 @@ begin
     repeat
       repeat
         Write('From column (1-9): ');
-        FromCol := GetUserInput('Integer');
+        FromCol := GetIntegerInput;
 
         if (FromCol < 1) or (FromCol > 9) then
         Writeln('Column must be between 1 and 9.');
 
       until (FromCol >= 1) and (FromCol <= 9);
+
+      repeat
+        Write('From row (1-9): ');
+        FromRow := GetIntegerInput;
+
+        if (FromRow < 1) or (FromRow > 9) then
+        Writeln('Row must be between 1 and 9.');
+
+      until (FromRow >= 1) and (FromRow <= 9);
+
+      repeat
+        Write('To column (1-9): ');
+        ToCol := GetIntegerInput;
+
+        if (ToCol < 1) or (ToCol > 9) then
+        Writeln('Column must be between 1 and 9.');
+
+      until (ToCol >= 1) and (ToCol <= 9);
+
+      repeat
+        Write('To row (1-9): ');
+        ToRow := GetIntegerInput;
+
+        if (ToRow < 1) or (ToRow > 9) then
+        Writeln('Row must be between 1 and 9.');
+
+      until (ToRow >= 1) and (ToRow <= 9);
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
       begin
@@ -511,11 +538,11 @@ end;
 procedure HandleError(ErrorCode: integer);
 begin
   case ErrorCode of
-    1: WriteLn('Invalid move.');
-    2: WriteLn('Game saved successfully.');
-    3: WriteLn('Failed to save game.');
-    4: WriteLn('Game loaded successfully.');
-    5: WriteLn('Failed to load game.');
+    1: Writeln('Invalid move.');
+    2: Writeln('Game saved successfully.');
+    3: Writeln('Failed to save game.');
+    4: Writeln('Game loaded successfully.');
+    5: Writeln('Failed to load game.');
   end;
 end;
 end.
