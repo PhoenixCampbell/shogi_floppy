@@ -21,12 +21,12 @@ const PieceValue: array[TPiece] of integer =
 
 function IsInsideBoard(Col, Row: integer): boolean;
 function IsValidMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
-function PieceToChar(Piece: TPiece): char;
+function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
 
 procedure SetupBoard(var Board: TBoard);
 procedure DisplayBoard(var Board: TBoard);
 procedure MakeMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer);
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
 procedure SaveGame(var Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
@@ -138,18 +138,18 @@ begin
       begin
         (* one step forward *)
         if CurrentPlayer = Sente then
-          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow + 1)
+          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow - 1)
         else
-          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow - 1);
+          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow + 1);
       end;
 
     Lance:
       begin
         (* any number steps only forward *)
         if CurrentPlayer = Sente then
-          IsValidMove := (ToCol = FromCol) and (ToRow > FromRow)
+          IsValidMove := (ToCol = FromCol) and (ToRow < FromRow)
         else
-          IsValidMove := (ToCol = FromCol) and (ToRow < FromRow);
+          IsValidMove := (ToCol = FromCol) and (ToRow > FromRow);
       end;
 
     Knight:
@@ -164,21 +164,28 @@ begin
     SilverGeneral:
       begin
         (* one step diagonally any direction or straight ahead *)
-        IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
-                      ((ToCol = FromCol) and ((CurrentPlayer = Sente) and (ToRow = FromRow + 1) or 
-                      (CurrentPlayer = Gote) and (ToRow = FromRow - 1)));
+        if CurrentPlayer = Sente then
+          IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow - 1))
+        else
+          IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow + 1));
       end;
 
     GoldGeneral:
       begin
-        (* one step all directions execpt diagonal backward *)
-        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+        if CurrentPlayer = Sente then
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
+                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
+        else
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
-
+(* maybe make a function for gold so all pieces that move like it follow the same logic instead of rewriting *)
     Bishop:
       begin
         (* any number of steps diagonally*)
@@ -199,42 +206,58 @@ begin
 
     PromotedPawn:
       begin
-        (* moves like Gold General *)
-        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+        if CurrentPlayer = Sente then
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
+                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
+        else
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
 
     PromotedLance:
       begin
-        (* moves like Gold General *)
-        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+        if CurrentPlayer = Sente then
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
+                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
+        else
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
 
     PromotedKnight:
       begin
-        (* moves like Gold General *)
-        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+        if CurrentPlayer = Sente then
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
+                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
+        else
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
 
     PromotedSilverGeneral:
       begin
-        (* moves like Gold General *)
-        IsValidMove := ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow - 1) and (CurrentPlayer = Sente)) and
-                      not ((ToCol = FromCol + 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote)) and
-                      not ((ToCol = FromCol - 1) and (ToRow = FromRow + 1) and (CurrentPlayer = Gote));
+        if CurrentPlayer = Sente then
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
+                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
+        else
+          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
+                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
+                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
 
     DragonHorse:
@@ -255,7 +278,7 @@ begin
   end;
 end;
 
-function PieceToChar(Piece: TPiece): char;
+function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
 begin
   case Piece of
     Pawn: 
@@ -411,7 +434,7 @@ begin
   Board[FromCol, FromRow].Owner := NoPlayer;
 end;
 
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficulyLevel: byte);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   MoveComplete: boolean;
