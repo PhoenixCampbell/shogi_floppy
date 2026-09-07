@@ -82,7 +82,7 @@ end;
 
 procedure MainMenu;
 var
-  UserChoice: string;
+  UserChoice: Integer;
 begin
   repeat
     ClrScr;
