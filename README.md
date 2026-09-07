@@ -12,6 +12,7 @@ This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC
   - [Copy Files to Floppy Disk](#copy-files-to-floppy-disk)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
+- [TODO List](#todo-list)
 - [Contributing](#contributing)
 
 ## Getting Started
@@ -69,7 +70,7 @@ Uses `fpc` instead of `tpc` when compiling programs.
 
 When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal (3.0/5.5) is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
 
-**_NOW OPTIONAL OR FOR DEVELOPMENT_**
+**_STEPS 1-2 NOW OPTIONAL OR FOR DEVELOPMENT_**
 
 1. Once you have copied the necessary files onto your floppy disk, ensure that Turbo Pascal is installed.
 
@@ -118,6 +119,28 @@ Contributions are welcome! If you find any issues or want to add new features, f
 - Create a feature branch for your changes.
 
 If you have any questions or need further assistance, please reach out!
+
+## Todo List
+
+There are a few things to work on in order to make this a fully usable game. I have written them here for me to remember to for anyone that wants to contribute:
+
+# UI Improvements
+
+- When entering TO/FROM coordinates for pieces, they need to not keep adding lines, but replace the previous line.
+  - This will keep the screen from scrolling when entering in coordinates and keep the board visable at all times.
+- If possible, find a way to enter both coordinates at the same time during both TO and FROM for UI improvement.
+  - Types into previous TODO for overall improvements during gameplay
+- Add a picture or ASCII Shogi piece above main menu for visual appeal
+
+# Gameplay Improvements
+
+- Pieces should not be able to jump over each other when moving, so block movement in direction if piece is in the way, either owned or enemy
+- Pieces should promote when reaching the opposing three rows, implement this logic to change pieces into other piece and retain ownership
+- Allow pieces captured to be used by attacker
+  - record captured piece as 'in hand' by attacker
+  - allow drop of captured piece anywhere on board ('drop' button added during turn would require menu before game to say what button opens drop option)
+- pawns can not be dropped in same lane as an occupied column (double pawn)
+- pawn can not be dropped for checkmate
 
 ---
 
