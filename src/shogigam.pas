@@ -445,9 +445,15 @@ begin
     DisplayBoard(Board); (* make sure before each move, show board, even before a mvoe is done *)
 
     if CurrentPlayer = Sente then
-      Writeln('Sente''s turn.')
+      begin
+        Writeln;
+        Writeln('Sente''s turn.');
+      end
     else
-      Writeln('Gote''s turn.');
+      begin
+        Writeln;
+        Writeln('Gote''s turn.');
+      end;
 
     MoveComplete := False;
 
@@ -489,14 +495,14 @@ begin
       until InRange(ToRow, 1, 9);
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
-      begin
-        MakeMove(Board, FromCol, FromRow, ToCol, ToRow);
-        MoveComplete := True;
-      end
+        begin
+          MakeMove(Board, FromCol, FromRow, ToCol, ToRow);
+          MoveComplete := True;
+        end
       else
-      begin
-        HandleError(1); (* Invalid move *)
-      end;
+        begin
+          HandleError(1); (* Invalid move *)
+        end;
     until MoveComplete;
     (* Allow human to move first always, then AI moves next *)
     (* Can be changed later to switch up who moves first for diversity but ok for now *)
