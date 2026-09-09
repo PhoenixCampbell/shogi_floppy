@@ -124,15 +124,16 @@ If you have any questions or need further assistance, please reach out!
 
 There are a few things to work on in order to make this a fully usable game. I have written them here for me to remember to for anyone that wants to contribute:
 
-# UI Improvements
+### UI Improvements
 
 - When entering TO/FROM coordinates for pieces, they need to not keep adding lines, but replace the previous line.
   - This will keep the screen from scrolling when entering in coordinates and keep the board visable at all times.
 - If possible, find a way to enter both coordinates at the same time during both TO and FROM for UI improvement.
   - Types into previous TODO for overall improvements during gameplay
 - Add a picture or ASCII Shogi piece above main menu for visual appeal
+- switch column numbers around in code so they follow proper procedure
 
-# Gameplay Improvements
+### Gameplay Improvements
 
 - Pieces should not be able to jump over each other when moving, so block movement in direction if piece is in the way, either owned or enemy
 - Pieces should promote when reaching the opposing three rows, implement this logic to change pieces into other piece and retain ownership
@@ -141,6 +142,10 @@ There are a few things to work on in order to make this a fully usable game. I h
   - allow drop of captured piece anywhere on board ('drop' button added during turn would require menu before game to say what button opens drop option)
 - pawns can not be dropped in same lane as an occupied column (double pawn)
 - pawn can not be dropped for checkmate
+- make sure placing pieces do not automatically promote, but give option next turn when moving in or out of zone
+- give option to promote until no viable option left for pieces like pawn, lance, and knight
+- pawn, lance, and knight cant be placed where there are no longer valid moves ie last row or last two rows for knight without promoting automatically
+- checkmate logic during move, after entered TO/FROM
 
 ---
 
