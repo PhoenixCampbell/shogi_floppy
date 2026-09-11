@@ -205,9 +205,9 @@ begin
 
               Value := Minimax(
                 Board,
-                Depth - 1,
                 OpponentOf(CurrentPlayer),
                 AIPlayer,
+                Depth - 1,
                 Alpha,
                 Beta
               );
@@ -283,9 +283,9 @@ begin
 
               Value := Minimax(
                 Board,
-                Depth - 1,
                 OpponentOf(CurrentPlayer),
                 AIPlayer,
+                Depth - 1,
                 Alpha,
                 Beta
               );
@@ -375,9 +375,9 @@ begin
 
             Value := Minimax(
               Board,
-              Depth - 1,
               OpponentOf(AIPlayer),
               AIPlayer,
+              Depth - 1,
               -ScoreInfinity,
               ScoreInfinity
             );
