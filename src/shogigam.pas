@@ -21,12 +21,12 @@ const PieceValue: array[TPiece] of integer =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
 
 function IsInsideBoard(Col, Row: integer): boolean;
-function IsValidMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
+function IsValidMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
 function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
 
 procedure SetupBoard(var Board: TBoard);
-procedure DisplayBoard(var Board: TBoard);
-procedure MakeMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer);
+procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
+procedure MakeMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer);
 procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
 procedure SaveGame(var Board: TBoard; FileName: string);
@@ -104,7 +104,7 @@ begin
   IsInsideBoard := (Col >= 1) and (Col <= 9) and (Row >= 1) and (Row <= 9);
 end;
 
-function IsValidMove( var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer; CurrentPlayer: TPlayer): boolean;
+function IsValidMove( var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
 begin
   IsValidMove := False;
 
@@ -386,7 +386,7 @@ begin
   end;
 end;
 
-procedure DisplayBoard(var Board: TBoard);
+procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
 var
   Row, Col, BoardLeft, BoardTop: integer;
   Symbol: char;
@@ -421,9 +421,20 @@ begin
     GotoXY(BoardLeft, BoardTop + 2 + (Row * 2));
     Write('+---+---+---+---+---+---+---+---+---+');
   end;
+
+  if CurrentPlayer = Sente then
+      begin
+        Writeln;
+        Writeln('Sente''s turn.');
+      end
+    else
+      begin
+        Writeln;
+        Writeln('Gote''s turn.');
+      end;
 end;
 
-procedure MakeMove(var Board: TBoard; FromCol, FromRow: integer; ToCol, ToRow: integer);
+procedure MakeMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer);
 begin
   (* moving including piece and ownership *)
   Board[ToCol, ToRow] :=
@@ -439,60 +450,41 @@ procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLeve
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   MoveComplete: boolean;
+  TempInput: integer;
 begin
   repeat
     ClrScr;
-    DisplayBoard(Board); (* make sure before each move, show board, even before a mvoe is done *)
-
-    if CurrentPlayer = Sente then
-      begin
-        Writeln;
-        Writeln('Sente''s turn.');
-      end
-    else
-      begin
-        Writeln;
-        Writeln('Gote''s turn.');
-      end;
+    DisplayBoard(Board, CurrentPlayer);
 
     MoveComplete := False;
 
     repeat
-      repeat
-        Write('From column (1-9): ');
-        FromCol := 10 - GetIntegerInput;
+      (* Get From coordinates *)
+      Write('From where? (e.g. 9 9): ');
+      TempInput := GetIntegerInput;  (* Read first coordinate (column) *)
+      FromCol := 10 - TempInput;     (* Convert to board coordinate *)
+      FromRow := GetIntegerInput;    (* Read second coordinate (row) *)
+      
+      if not (InRange(FromCol, 1, 9) and InRange(FromRow, 1, 9)) then
+      begin
+        Writeln('Coordinates must be between 1 and 9.');
+        Continue;
+      end;
 
-        if not InRange(FromCol, 1, 9) then
-        Writeln('Column must be between 1 and 9.');
+      (* Get To coordinates *)
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer);
 
-      until InRange(FromCol, 1, 9);
-
-      repeat
-        Write('From row (1-9): ');
-        FromRow := GetIntegerInput;
-
-        if not InRange(FromRow, 1, 9) then
-          Writeln('Row must be between 1 and 9.');
-
-      until InRange(FromRow, 1, 9);
-
-      repeat
-        Write('To column (1-9): ');
-        ToCol := 10 - GetIntegerInput;
-
-        if not InRange(ToCol, 1, 9) then
-          Writeln('Column must be between 1 and 9.');
-
-      until InRange(ToCol, 1, 9);
-
-      repeat
-        Write('To row (1-9): ');
-        ToRow := GetIntegerInput;
-
-        if not InRange(ToRow, 1, 9) then
-          Writeln('Row must be between 1 and 9.');
-
-      until InRange(ToRow, 1, 9);
+      Write('To where? (e.g. 9 9): ');
+      TempInput := GetIntegerInput;  (* Read first coordinate (column) *)
+      ToCol := 10 - TempInput;       (* Convert to board coordinate *)
+      ToRow := GetIntegerInput;      (* Read second coordinate (row) *)
+      
+      if not (InRange(ToCol, 1, 9) and InRange(ToRow, 1, 9)) then
+      begin
+        Writeln('Coordinates must be between 1 and 9.');
+        Continue;
+      end;
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
         begin
@@ -501,18 +493,14 @@ begin
         end
       else
         begin
-          HandleError(1); (* Invalid move *)
+          HandleError(1); 
         end;
     until MoveComplete;
-    (* Allow human to move first always, then AI moves next *)
-    (* Can be changed later to switch up who moves first for diversity but ok for now *)
+    
     SwitchPlayer(CurrentPlayer);
 
-    (* check if game is AI or pvp by checking if DifficultyLevel is set or not *)
     if DifficultyLevel > 0 then
       Exit;
-    (* Any difficulty above 0 is obviously meant to be a bot. *)
-    (* Scaleable to add more difficulty later if need be or wanted *)
   until False;
 end;
 

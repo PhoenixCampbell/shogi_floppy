@@ -139,7 +139,7 @@ begin
   EvaluateBoard := Score;
 end;
 
-function Minimax(var Board: TBoard; Depth: integer; CurrentPlayer: TPlayer; AIPlayer: TPlayer; Alpha, Beta: integer): integer;
+function Minimax(var Board: TBoard; CurrentPlayer, AIPlayer: TPlayer; Depth, Alpha, Beta: integer): integer;
 var
   FromCol, FromRow: integer;
   ToCol, ToRow: integer;

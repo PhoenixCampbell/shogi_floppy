@@ -73,13 +73,12 @@ begin
   Writeln('Sente moves first.');
 
   repeat
-    PlayGame(Board, CurrentPlayer, DifficultyLevel
-    );
+    PlayGame(Board, CurrentPlayer, DifficultyLevel);
 
     if CurrentPlayer = Gote then
     begin
       ClrScr;
-      DisplayBoard(Board);
+      DisplayBoard(Board, CurrentPlayer);
       Writeln;
       Writeln('Computer is moving...');
 
@@ -112,7 +111,6 @@ const
 
 var
   Piece: TPiece;
-  Key: char;
 begin
   ClrScr;
 
@@ -130,6 +128,27 @@ begin
 
     Writeln(PieceValue[Piece]);
   end;
+
+  PauseForUser;
+
+  ClrScr;
+
+  CenterText('Shogi Game - Controls');
+  Writeln;
+  Writeln('Drop Pieces:');
+  Writeln('  - Press ''D'' to drop a piece');
+  Writeln('  - Select piece from your captured pieces');
+  Writeln('  - Choose destination square');
+  Writeln;
+  Writeln('Escape Game:');
+  Writeln('  - Press ''Q'' to quit and return to main menu');
+  Writeln('  - Press ''ESC'' to exit the game');
+  Writeln;
+  Writeln('General Controls:');
+  Writeln('  - Enter Column / Row to select a square, pressing ''ENTER'' ');
+  Writeln('  -  between each input (e.g., ''9'' ENTER then ''5'' ENTER)');
+  Writeln('  - Press ''R'' to restart the game');
+  Writeln;
 
   PauseForUser;
 end;
