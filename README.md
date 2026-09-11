@@ -126,11 +126,10 @@ There are a few things to work on in order to make this a fully usable game. I h
 
 ### UI Improvements
 
-- When entering TO/FROM coordinates for pieces, they need to not keep adding lines, but replace the previous line.
-  - This will keep the screen from scrolling when entering in coordinates and keep the board visable at all times.
-- If possible, find a way to enter both coordinates at the same time during both TO and FROM for UI improvement.
-  - Types into previous TODO for overall improvements during gameplay
 - Add a picture or ASCII Shogi piece above main menu for visual appeal
+- Use arrow keys to determine coordinate location while playing instead of maunual entry
+  - using previous entry from player as default during game. 5,5 to start
+  - would look wierd to default back each time to center board
 
 ### Gameplay Improvements
 
