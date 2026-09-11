@@ -451,6 +451,7 @@ var
   FromCol, FromRow, ToCol, ToRow: integer;
   MoveComplete: boolean;
   TempInput: integer;
+  Key: char;
 begin
   repeat
     ClrScr;
@@ -459,6 +460,16 @@ begin
     MoveComplete := False;
 
     repeat
+      (* Check for escape key before getting input *)
+      if KeyPressed then
+      begin
+        Key := ReadKey;
+        if Ord(Key) = 27 then // ESC key
+        begin
+          Exit;
+        end;
+      end;
+
       (* Get From coordinates *)
       Write('From where? (e.g. 9 9): ');
       TempInput := GetIntegerInput;  (* Read first coordinate (column) *)
@@ -469,6 +480,15 @@ begin
       begin
         Writeln('Coordinates must be between 1 and 9.');
         Continue;
+      end;
+
+      if KeyPressed then
+      begin
+        Key := ReadKey;
+        if Ord(Key) = 27 then // ESC key
+        begin
+          Exit;
+        end;
       end;
 
       (* Get To coordinates *)
