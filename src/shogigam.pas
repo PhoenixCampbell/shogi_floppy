@@ -460,7 +460,7 @@ begin
     repeat
       repeat
         Write('From column (1-9): ');
-        FromCol := GetIntegerInput;
+        FromCol := 10 - GetIntegerInput;
 
         if not InRange(FromCol, 1, 9) then
         Writeln('Column must be between 1 and 9.');
@@ -478,7 +478,7 @@ begin
 
       repeat
         Write('To column (1-9): ');
-        ToCol := GetIntegerInput;
+        ToCol := 10 - GetIntegerInput;
 
         if not InRange(ToCol, 1, 9) then
           Writeln('Column must be between 1 and 9.');
