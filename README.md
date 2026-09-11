@@ -131,7 +131,6 @@ There are a few things to work on in order to make this a fully usable game. I h
 - If possible, find a way to enter both coordinates at the same time during both TO and FROM for UI improvement.
   - Types into previous TODO for overall improvements during gameplay
 - Add a picture or ASCII Shogi piece above main menu for visual appeal
-- switch column numbers around in code so they follow proper procedure
 
 ### Gameplay Improvements
 
