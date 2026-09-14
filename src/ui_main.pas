@@ -108,7 +108,6 @@ const
       'Promoted Lance', 'Promoted Pawn', 'Bishop', 'Rook', 'Dragon Horse',
       'Dragon King', 'King'
     );
-
 var
   Piece: TPiece;
 begin

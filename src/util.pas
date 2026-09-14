@@ -25,8 +25,7 @@ end;
 function GetIntegerInput: Integer;
 var
   Input: string;
-  Value: Integer;
-  ErrorCode: Integer;
+  Value, ErrorCode: Integer;
 begin
   repeat
     Readln(Input);

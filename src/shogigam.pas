@@ -449,8 +449,8 @@ end;
 procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
-  MoveComplete: boolean;
   TempInput: integer;
+  MoveComplete: boolean;
   Key: char;
 begin
   repeat
@@ -504,6 +504,15 @@ begin
       begin
         Writeln('Coordinates must be between 1 and 9.');
         Continue;
+      end;
+
+      if KeyPressed then
+      begin
+        Key := ReadKey;
+        if Ord(Key) = 27 then // ESC key
+        begin
+          Exit;
+        end;
       end;
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then

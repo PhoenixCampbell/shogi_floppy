@@ -11,7 +11,6 @@ implementation
 const
   ScoreInfinity = 30000;
   DirectionCol: array[1..4] of integer = (-1, 1, 0, 0);
-
   DirectionRow: array[1..4] of integer = (0, 0, -1, 1);
 
 function OpponentOf(Player: TPlayer): TPlayer;
@@ -26,8 +25,7 @@ end;
 
 procedure RandomMove(var Board: TBoard; AIPlayer: TPlayer);
 var
-  FromCol, FromRow: integer;
-  ToCol, ToRow: integer;
+  FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
   Attempts: integer;
 begin
@@ -70,8 +68,7 @@ end;
 
 procedure BasicAIMove(var Board: TBoard; AIPlayer: TPlayer);
 var
-  FromCol, FromRow: integer;
-  ToCol, ToRow: integer;
+  FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
 begin
   for FromRow := 1 to 9 do
@@ -113,8 +110,7 @@ end;
 
 function EvaluateBoard(var Board: TBoard; AIPlayer: TPlayer): integer;
 var
-  Row, Col: integer;
-  Score: integer;
+  Row, Col, Score: integer;
 begin
   Score := 0;
 
@@ -141,16 +137,10 @@ end;
 
 function Minimax(var Board: TBoard; CurrentPlayer, AIPlayer: TPlayer; Depth, Alpha, Beta: integer): integer;
 var
-  FromCol, FromRow: integer;
-  ToCol, ToRow: integer;
+  FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
-
-  Value: integer;
-  BestValue: integer;
-
-  FromSquare: TSquare;
-  ToSquare: TSquare;
-
+  Value, BestValue: integer;
+  FromSquare, ToSquare: TSquare;
   MoveFound: boolean;
 begin
   if Depth <= 0 then
@@ -320,15 +310,11 @@ end;
 
 procedure MinimaxMove(var Board: TBoard; AIPlayer: TPlayer; Depth: integer);
 var
-  FromCol, FromRow: integer;
-  ToCol, ToRow: integer;
+  FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
-  BestFromCol, BestFromRow: integer;
-  BestToCol, BestToRow: integer;
-  Value: integer;
-  BestValue: integer;
-  FromSquare: TSquare;
-  ToSquare: TSquare;
+  BestFromCol, BestFromRow, BestToCol, BestToRow: integer;
+  Value, BestValue: integer;
+  FromSquare, ToSquare: TSquare;
   MoveFound: boolean;
 begin
   BestValue := -ScoreInfinity;
