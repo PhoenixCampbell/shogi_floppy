@@ -137,14 +137,13 @@ There are a few things to work on in order to make this a fully usable game. I h
 ### Gameplay Improvements
 
 - Pieces should promote when reaching the opposing three rows, implement this logic to change pieces into other piece and retain ownership
-- Allow pieces captured to be used by attacker
-  - record captured piece as 'in hand' by attacker
-  - allow drop of captured piece anywhere on board ('drop' button added during turn would require menu before game to say what button opens drop option)
+  - give option to promote until no viable option left for pieces like pawn, lance, and knight- Allow pieces captured to be used by attacker
+  - make sure placing pieces do not automatically promote, but give option next turn when moving in or out of zone
+- record captured piece as 'in hand' by attacker
+- allow drop of captured piece anywhere on board ('drop' button added during turn would require menu before game to say what button opens drop option)
 - pawns can not be dropped in same lane as an occupied column (double pawn)
 - pawn can not be dropped for checkmate
-- make sure placing pieces do not automatically promote, but give option next turn when moving in or out of zone
-- give option to promote until no viable option left for pieces like pawn, lance, and knight
-- pawn, lance, and knight cant be placed where there are no longer valid moves ie last row or last two rows for knight without promoting automatically
+- pawn, lance, and knight can not be dropped where there are no longer valid moves ie last row or last two rows for knight without promoting automatically
 - checkmate logic during move, after entered TO/FROM
 
 ---
