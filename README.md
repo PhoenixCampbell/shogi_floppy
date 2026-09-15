@@ -131,13 +131,11 @@ There are a few things to work on in order to make this a fully usable game. I h
 
 - Add a picture or ASCII Shogi piece above main menu for visual appeal
 - Use arrow keys to determine coordinate location while playing instead of maunual entry
-  - using previous entry from player as default during game. 5,5 to start
+  - using previous entry from player as default during game. 5,5 as default
   - would look wierd to default back each time to center board
-- Ensure player can exit a game and not be trapped during play
 
 ### Gameplay Improvements
 
-- Pieces should not be able to jump over each other when moving, so block movement in direction if piece is in the way, either owned or enemy
 - Pieces should promote when reaching the opposing three rows, implement this logic to change pieces into other piece and retain ownership
 - Allow pieces captured to be used by attacker
   - record captured piece as 'in hand' by attacker
