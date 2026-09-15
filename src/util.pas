@@ -7,6 +7,7 @@ uses crt;
 function GetStringInput: string;
 function GetIntegerInput: Integer;
 function GetCharInput: Char;
+function StrToIntDef(S : string; Default : integer) : integer;
 function InRange(Value, Min, Max: Integer): Boolean;
 procedure CenterText(Text: string);
 procedure PauseForUser;
@@ -53,6 +54,19 @@ begin
   until Length(Input) = 1;
 
   GetCharInput := Input[1];
+end;
+
+(* StrToIntDef does not exist apparently in turbo pascal 4.0, so this is to hopefully not run into compile issues when testing on Amstrad PPC *)
+function StrToIntDef(S : string; Default : integer) : integer;
+var
+  ResultValue, ErrorCode   : integer;
+begin
+  Val(S, ResultValue, ErrorCode);
+  
+  if ErrorCode = 0 then
+    StrToIntDef := ResultValue
+  else
+    StrToIntDef := Default;
 end;
 
 function InRange(Value, Min, Max: Integer): Boolean;
