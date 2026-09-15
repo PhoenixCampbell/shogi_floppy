@@ -449,9 +449,8 @@ end;
 procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
-  TempInput: integer;
   MoveComplete: boolean;
-  Key: char;
+  Input: string;
 begin
   repeat
     ClrScr;
@@ -460,21 +459,20 @@ begin
     MoveComplete := False;
 
     repeat
-      (* Check for escape key before getting input *)
-      if KeyPressed then
-      begin
-        Key := ReadKey;
-        if Ord(Key) = 27 then // ESC key
-        begin
-          Exit;
-        end;
-      end;
 
       (* Get From coordinates *)
       Write('From where? (e.g. 9 9): ');
-      TempInput := GetIntegerInput;  (* Read first coordinate (column) *)
-      FromCol := 10 - TempInput;     (* Convert to board coordinate *)
-      FromRow := GetIntegerInput;    (* Read second coordinate (row) *)
+
+      Input := GetStringInput; (* Read input as string *)
+      if UpCase(Input) = 'RESIGN' then
+      begin
+        Exit; (* Exit the game if user types 'resign' *)
+      end;
+
+      (* This gives the user on either side an option to resign or end the game without being trapped in the game *)
+      (* Otherwise, input gets shoved into the coordinate parsing *)
+      FromCol := 10 - StrToIntDef(Input, 0);
+      FromRow := GetIntegerInput;
       
       if not (InRange(FromCol, 1, 9) and InRange(FromRow, 1, 9)) then
       begin
@@ -482,37 +480,18 @@ begin
         Continue;
       end;
 
-      if KeyPressed then
-      begin
-        Key := ReadKey;
-        if Ord(Key) = 27 then // ESC key
-        begin
-          Exit;
-        end;
-      end;
-
       (* Get To coordinates *)
       ClrScr;
       DisplayBoard(Board, CurrentPlayer);
 
       Write('To where? (e.g. 9 9): ');
-      TempInput := GetIntegerInput;  (* Read first coordinate (column) *)
-      ToCol := 10 - TempInput;       (* Convert to board coordinate *)
-      ToRow := GetIntegerInput;      (* Read second coordinate (row) *)
+      ToCol := 10 - StrToIntDef(Input, 0);
+      ToRow := GetIntegerInput;
       
       if not (InRange(ToCol, 1, 9) and InRange(ToRow, 1, 9)) then
       begin
         Writeln('Coordinates must be between 1 and 9.');
         Continue;
-      end;
-
-      if KeyPressed then
-      begin
-        Key := ReadKey;
-        if Ord(Key) = 27 then // ESC key
-        begin
-          Exit;
-        end;
       end;
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
