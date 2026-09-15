@@ -140,13 +140,11 @@ begin
   Writeln('  - Choose destination square');
   Writeln;
   Writeln('Escape Game:');
-  Writeln('  - Press ''Q'' to quit and return to main menu');
-  Writeln('  - Press ''ESC'' to exit the game');
+  Writeln('  - Typing ''resign'' at the beginning on your turn will end the game');
   Writeln;
   Writeln('General Controls:');
   Writeln('  - Enter Column / Row to select a square, pressing ''ENTER'' ');
   Writeln('  -  between each input (e.g., ''9'' ENTER then ''5'' ENTER)');
-  Writeln('  - Press ''R'' to restart the game');
   Writeln;
 
   PauseForUser;
