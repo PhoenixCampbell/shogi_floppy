@@ -68,7 +68,9 @@ Link to compiler for download: [Free Pascal Compiler](https://www.freepascal.org
 
 Uses `fpc` instead of `tpc` when compiling programs.
 
-When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal (3.0/5.5) is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
+When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal 4.0 is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
+
+[Blog Post with Dev Img](https://phoenixcampbell.com/projects/pages/shogi.html)
 
 **_STEPS 1-2 NOW OPTIONAL OR FOR DEVELOPMENT_**
 
@@ -109,6 +111,7 @@ When testing on actual Amstrad system, a recommended combination of MS-DOS and T
   - `shogi_game.pas`: Core logic, rules, and piece movements.
   - `ui_main.pas`: User interface and gameplay options.
   - `ai_opponent.pas`: Logic for computer opponent ranging in difficulty.
+  - `util.pas`: Any utilities or general reusable functions to make the game easier to code.
   - Any extra files are from compiling or are main executable. These .o, .ppu, and .exe files change with each compilation.
 
 ## Contributing
@@ -130,6 +133,7 @@ There are a few things to work on in order to make this a fully usable game. I h
 - Use arrow keys to determine coordinate location while playing instead of maunual entry
   - using previous entry from player as default during game. 5,5 to start
   - would look wierd to default back each time to center board
+- Ensure player can exit a game and not be trapped during play
 
 ### Gameplay Improvements
 
