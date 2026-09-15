@@ -31,7 +31,6 @@ procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLeve
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
 procedure SaveGame(var Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
-procedure HandleError(ErrorCode: integer);
 implementation
 
 
@@ -105,6 +104,8 @@ begin
 end;
 
 function IsValidMove( var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
+var
+  i: integer;
 begin
   IsValidMove := False;
 
@@ -151,15 +152,32 @@ begin
           IsValidMove := (ToCol = FromCol) and (ToRow < FromRow)
         else
           IsValidMove := (ToCol = FromCol) and (ToRow > FromRow);
+
+        (* check for blocking pieces *)
+        if IsValidMove then
+        begin
+          if CurrentPlayer = Sente then
+          begin
+            for i := ToRow + 1 to FromRow - 1 do
+              if Board[FromCol, i].Piece <> None then
+                IsValidMove := False;
+          end
+          else
+          begin
+            for i := FromRow + 1 to ToRow - 1 do
+              if Board[FromCol, i].Piece <> None then
+                IsValidMove := False;
+          end;
+        end;
       end;
 
     Knight:
       begin
-        (* two steps forward and one step left or right *)
-        IsValidMove := ((ToCol = FromCol + 2) and (Abs(ToRow - FromRow) = 1)) or
-                      ((ToCol = FromCol - 2) and (Abs(ToRow - FromRow) = 1)) or
-                      ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 2)) or
-                      ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 2));
+        (* two forward, one left/right *)
+        if CurrentPlayer = Sente then
+          IsValidMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 2)
+        else
+          IsValidMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 2);
       end;
 
     SilverGeneral:
@@ -190,13 +208,93 @@ begin
     Bishop:
       begin
         (* any number of steps diagonally*)
-        IsValidMove := Abs(ToCol - FromCol) = Abs(ToRow - FromRow);
+        if Abs(ToCol - FromCol) = Abs(ToRow - FromRow) then
+        begin
+          IsValidMove := True;
+          
+          (* Check for blocking pieces *)
+          if ToCol > FromCol then
+          begin
+            if ToRow > FromRow then
+            begin
+              (* Moving diagonally down-right *)
+              for i := 1 to ToCol - FromCol - 1 do
+                if Board[FromCol + i, FromRow + i].Piece <> None then
+                  IsValidMove := False;
+            end
+            else
+            begin
+              (* Moving diagonally up-right *)
+              for i := 1 to ToCol - FromCol - 1 do
+                if Board[FromCol + i, FromRow - i].Piece <> None then
+                  IsValidMove := False;
+            end;
+          end
+          else
+          begin
+            if ToRow > FromRow then
+            begin
+              (* Moving diagonally down-left *)
+              for i := 1 to FromCol - ToCol - 1 do
+                if Board[FromCol - i, FromRow + i].Piece <> None then
+                  IsValidMove := False;
+            end
+            else
+            begin
+              (* Moving diagonally up-left *)
+              for i := 1 to FromCol - ToCol - 1 do
+                if Board[FromCol - i, FromRow - i].Piece <> None then
+                  IsValidMove := False;
+            end;
+          end;
+        end;
       end;
 
     Rook:
       begin
         (* vertical or horizontal any number of steps*)
-        IsValidMove := (ToCol = FromCol) or (ToRow = FromRow);
+        if (ToCol = FromCol) or (ToRow = FromRow) then
+        begin
+          IsValidMove := True;
+          
+          (* Check for blocking pieces *)
+          if ToCol = FromCol then
+          begin
+            (* Vertical movement *)
+            if ToRow > FromRow then
+            begin
+              (* Moving down *)
+              for i := FromRow + 1 to ToRow - 1 do
+                if Board[FromCol, i].Piece <> None then
+                  IsValidMove := False;
+            end
+            else
+            begin
+              (* Moving up *)
+              for i := ToRow + 1 to FromRow - 1 do
+                if Board[FromCol, i].Piece <> None then
+                  IsValidMove := False;
+            end;
+          end
+          else
+          begin
+            (* Horizontal movement *)
+            if ToCol > FromCol then
+            begin
+              (* Moving right *)
+              for i := FromCol + 1 to ToCol - 1 do
+                if Board[i, FromRow].Piece <> None then
+                  IsValidMove := False;
+            end
+            else
+            begin
+              (* Moving left *)
+              for i := ToCol + 1 to FromCol - 1 do
+                if Board[i, FromRow].Piece <> None then
+                  IsValidMove := False;
+            end;
+          end;
+        end;
       end;
 
     King:
@@ -264,15 +362,98 @@ begin
     DragonHorse:
       begin
         (* moves like Bishop and one step orthogonally *)
-        IsValidMove := (Abs(ToCol - FromCol) = Abs(ToRow - FromRow)) or
-                      ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1));
+        if (Abs(ToCol - FromCol) = Abs(ToRow - FromRow)) or
+          ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) then
+        begin
+          IsValidMove := True;
+          
+          (* Check for blocking pieces for diagonal moves *)
+          if Abs(ToCol - FromCol) = Abs(ToRow - FromRow) then
+          begin
+            if ToCol > FromCol then
+            begin
+              if ToRow > FromRow then
+              begin
+                (* Moving diagonally down-right *)
+                for i := 1 to ToCol - FromCol - 1 do
+                  if Board[FromCol + i, FromRow + i].Piece <> None then
+                    IsValidMove := False;
+              end
+              else
+              begin
+                (* Moving diagonally up-right *)
+                for i := 1 to ToCol - FromCol - 1 do
+                  if Board[FromCol + i, FromRow - i].Piece <> None then
+                    IsValidMove := False;
+              end;
+            end
+            else
+            begin
+              if ToRow > FromRow then
+              begin
+                (* Moving diagonally down-left *)
+                for i := 1 to FromCol - ToCol - 1 do
+                  if Board[FromCol - i, FromRow + i].Piece <> None then
+                    IsValidMove := False;
+              end
+              else
+              begin
+                (* Moving diagonally up-left *)
+                for i := 1 to FromCol - ToCol - 1 do
+                  if Board[FromCol - i, FromRow - i].Piece <> None then
+                    IsValidMove := False;
+              end;
+            end;
+          end;
+        end;
       end;
 
     DragonKing:
       begin
         (* moves like Rook and one step diagonally *)
-        IsValidMove := (ToCol = FromCol) or (ToRow = FromRow) or
-                      ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1));
+        if (ToCol = FromCol) or (ToRow = FromRow) or
+          ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) then
+        begin
+          IsValidMove := True;
+          
+          (* Check for blocking pieces for orthogonal moves *)
+          if ToCol = FromCol then
+          begin
+            (* Vertical movement *)
+            if ToRow > FromRow then
+            begin
+              (* Moving down *)
+              for i := FromRow + 1 to ToRow - 1 do
+                if Board[FromCol, i].Piece <> None then
+                  IsValidMove := False;
+            end
+            else
+            begin
+              (* Moving up *)
+              for i := ToRow + 1 to FromRow - 1 do
+                if Board[FromCol, i].Piece <> None then
+                  IsValidMove := False;
+            end;
+          end
+          else
+          begin
+            (* Horizontal movement *)
+            if ToCol > FromCol then
+            begin
+              (* Moving right *)
+              for i := FromCol + 1 to ToCol - 1 do
+                if Board[i, FromRow].Piece <> None then
+                  IsValidMove := False;
+            end
+            else
+            begin
+              (* Moving left *)
+              for i := ToCol + 1 to FromCol - 1 do
+                if Board[i, FromRow].Piece <> None then
+                  IsValidMove := False;
+            end;
+          end;
+        end;
       end;
     else
       IsValidMove := False;
@@ -453,18 +634,17 @@ var
   Input: string;
 begin
   repeat
-    ClrScr;
-    DisplayBoard(Board, CurrentPlayer);
-
     MoveComplete := False;
 
     repeat
-
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer);
+      
       (* Get From coordinates *)
       Write('From where? (e.g. 9 9): ');
 
       Input := GetStringInput; (* Read input as string *)
-      if UpCase(Input) = 'RESIGN' then
+      if (UpCase(Input) = 'RESIGN') or (UpCase(Input) = 'END') or (UpCase(Input) = 'QUIT') or (UpCase(Input) = 'EXIT') then
       begin
         Exit; (* Exit the game if user types 'resign' *)
       end;
@@ -476,7 +656,7 @@ begin
       
       if not (InRange(FromCol, 1, 9) and InRange(FromRow, 1, 9)) then
       begin
-        Writeln('Coordinates must be between 1 and 9.');
+        Writeln('Coordinates must be between 9 and 1.');
         Continue;
       end;
 
@@ -484,8 +664,8 @@ begin
       ClrScr;
       DisplayBoard(Board, CurrentPlayer);
 
-      Write('To where? (e.g. 9 9): ');
-      ToCol := 10 - StrToIntDef(Input, 0);
+      Write('To where? (e.g. 9 8): ');
+      ToCol := 10 - GetIntegerInput;
       ToRow := GetIntegerInput;
       
       if not (InRange(ToCol, 1, 9) and InRange(ToRow, 1, 9)) then
@@ -501,7 +681,8 @@ begin
         end
       else
         begin
-          HandleError(1); 
+          HandleError(1);
+          PauseForUser;
         end;
     until MoveComplete;
     
@@ -559,16 +740,5 @@ begin
     end;
 
   Close(FileHandle);
-end;
-
-procedure HandleError(ErrorCode: integer);
-begin
-  case ErrorCode of
-    1: Writeln('Invalid move.');
-    2: Writeln('Game saved successfully.');
-    3: Writeln('Failed to save game.');
-    4: Writeln('Game loaded successfully.');
-    5: Writeln('Failed to load game.');
-  end;
 end;
 end.

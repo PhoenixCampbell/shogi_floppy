@@ -12,6 +12,7 @@ function InRange(Value, Min, Max: Integer): Boolean;
 procedure CenterText(Text: string);
 procedure PauseForUser;
 procedure WriteLine(Text: string; VerticalOffset: integer);
+procedure HandleError(ErrorCode: integer);
 
 implementation
 
@@ -101,5 +102,16 @@ begin
   GotoXY((ScreenWidth div 2) - (Length(Text) div 2), 12 + VerticalOffset);
 
   Writeln(Text);
+end;
+
+procedure HandleError(ErrorCode: integer);
+begin
+  case ErrorCode of
+    1: Writeln('Invalid move.');
+    2: Writeln('Game saved successfully.');
+    3: Writeln('Failed to save game.');
+    4: Writeln('Game loaded successfully.');
+    5: Writeln('Failed to load game.');
+  end;
 end;
 end.
