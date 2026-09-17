@@ -126,6 +126,7 @@ function IsValidMove(var Board: TBoard;
                       var CurrentPlayer: TPlayer): boolean;
 var
   i: integer;
+  MoveValid: boolean;
 begin
   IsValidMove := False;
 
@@ -180,15 +181,17 @@ begin
           begin
             for i := ToRow + 1 to FromRow - 1 do
               if Board[FromCol, i].Piece <> None then
-                IsValidMove := False;
+                MoveValid := False;
           end
           else
           begin
             for i := FromRow + 1 to ToRow - 1 do
               if Board[FromCol, i].Piece <> None then
-                IsValidMove := False;
+                MoveValid := False;
           end;
         end;
+
+        isValidMove := MoveValid;
       end;
 
     Knight:
