@@ -45,8 +45,10 @@ var
   Board: TBoard;
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
+  CapturedPieces: TCapturedPieces;
 begin
   SetupBoard(Board);
+  ClearCapturedPieces(CapturedPieces);
   CurrentPlayer := Sente;
 
   ClrScr;
@@ -73,7 +75,7 @@ begin
   Writeln('Sente moves first.');
 
   repeat
-    PlayGame(Board, CurrentPlayer, DifficultyLevel);
+    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
 
     if CurrentPlayer = Gote then
     begin
@@ -82,7 +84,7 @@ begin
       Writeln;
       Writeln('Computer is moving...');
 
-      PlayAI(Board, DifficultyLevel);
+      PlayAI(Board, DifficultyLevel, CapturedPieces);
 
       SwitchPlayer(CurrentPlayer);
     end;
@@ -94,11 +96,13 @@ procedure PlayerVsPlayer;
 var
   Board: TBoard;
   CurrentPlayer: TPlayer;
+  CapturedPieces: TCapturedPieces;
 begin
   SetupBoard(Board);
+  ClearCapturedPieces(CapturedPieces);
   CurrentPlayer := Sente;
 
-  PlayGame(Board, CurrentPlayer, 0);
+  PlayGame(Board, CurrentPlayer, 0, CapturedPieces);
 end;
 
 procedure DisplayRules;
