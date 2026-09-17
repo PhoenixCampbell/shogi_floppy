@@ -9,7 +9,7 @@ function GetIntegerInput: integer;
 function GetCharInput: char;
 function StrToIntDef(S : string; Default : integer) : integer;
 function InRange(Value, Min, Max: integer): Boolean;
-function UpperString(const S: string): string;
+function UpperString(S: string): string;
 procedure CenterText(Text: string);
 procedure PauseForUser;
 procedure WriteLine(Text: string; VerticalOffset: integer);
@@ -76,7 +76,7 @@ begin
   InRange := (Value >= Min) and (Value <= Max);
 end;
 
-function UpperString(const S: string): string;
+function UpperString(S: string): string;
 var
   i: integer;
 begin
