@@ -83,10 +83,17 @@ When testing on actual Amstrad system, a recommended combination of MS-DOS and T
    should return version
 
 2. Compile the `main.pas` file using Turbo Pascal:
+   - From Drive B: on Amstrad
+
+   ```sh
+   a:\tpc main.pas
+   ```
 
    ```sh
    tpc main.pas
    ```
+
+   - modern terminal
 
 **Running the Game**
 
@@ -125,7 +132,7 @@ If you have any questions or need further assistance, please reach out!
 
 ## Todo List
 
-There are a few things to work on in order to make this a fully usable game. I have written them here for me to remember to for anyone that wants to contribute:
+There are a few things to work on in order to make this a fully usable game. I have written them here for me to remember or for anyone that wants to contribute:
 
 ### UI Improvements
 
