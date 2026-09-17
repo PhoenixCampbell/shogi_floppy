@@ -744,22 +744,24 @@ procedure PlayGame(
   var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
-  MoveComplete: boolean;
+  MoveComplete, PromotionChoice, InputValid: boolean;
   Input: string;
-  PromotionChoice: boolean;
 begin
   repeat
     MoveComplete := False;
-
+    
     repeat
       ClrScr;
       DisplayBoard(Board, CurrentPlayer);
       
+      InputValid := True;
+
       (* Get From coordinates *)
       Write('From where? (e.g. 9 9): ');
 
       Input := GetStringInput; (* Read input as string *)
       Input := UpperString(Input);
+      
       if (Input = 'RESIGN') or
           (Input = 'END') or
           (Input = 'QUIT') or
@@ -773,62 +775,112 @@ begin
       FromCol := 10 - StrToIntDef(Input, 0);
       FromRow := GetIntegerInput;
       
-      if not (InRange(FromCol, 1, 9) and InRange(FromRow, 1, 9)) then
+      (* Validate From coordinates *)
+      if not (InRange(FromCol, 1, 9) and
+              InRange(FromRow, 1, 9)) then
       begin
-        Writeln('Coordinates must be between 9 and 1.');
-        Continue;
+        Writeln(
+          'Starting coordinates must be between 1 and 9.'
+        );
+        PauseForUser;
+        InputValid := False;
       end;
 
-      (* Get To coordinates *)
-      ClrScr;
-      DisplayBoard(Board, CurrentPlayer);
-
-      Write('To where? (e.g. 9 8): ');
-      ToCol := 10 - GetIntegerInput;
-      ToRow := GetIntegerInput;
-      
-      if not (InRange(ToCol, 1, 9) and InRange(ToRow, 1, 9)) then
+      (* Only ask for destination if From was valid *)
+      if InputValid then
       begin
-        Writeln('Coordinates must be between 1 and 9.');
-        Continue;
+        ClrScr;
+        DisplayBoard(Board, CurrentPlayer);
+
+        Write('To where? (e.g. 9 8): ');
+        ToCol := 10 - GetIntegerInput;
+        ToRow := GetIntegerInput;
+
+        (* Validate To coordinates *)
+        if not (InRange(ToCol, 1, 9) and
+                InRange(ToRow, 1, 9)) then
+        begin
+          Writeln(
+            'Destination coordinates must be between 1 and 9.'
+          );
+          PauseForUser;
+          InputValid := False;
+        end;
       end;
 
-      if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
+      (* Only process move if all coordinates were valid *)
+      if InputValid then
+      begin
+        if IsValidMove(
+          Board,
+          FromCol,
+          FromRow,
+          ToCol,
+          ToRow,
+          CurrentPlayer
+        ) then
         begin
           PromotionChoice := False;
 
-          if MustPromote(Board[FromCol, FromRow].Piece, ToRow, CurrentPlayer) then
+          if MustPromote(
+            Board[FromCol, FromRow].Piece,
+            ToRow,
+            CurrentPlayer
+          ) then
           begin
             PromotionChoice := True;
             Writeln('This piece must promote.');
           end
-          else if CanPromote(Board[FromCol, FromRow].Piece, FromRow, ToRow, CurrentPlayer) then
+          else if CanPromote(
+            Board[FromCol, FromRow].Piece,
+            FromRow,
+            ToRow,
+            CurrentPlayer
+          ) then
           begin
             repeat
               Write('Promote piece? (Y/N): ');
-              Input := UpperString(GetStringInput);
+              Input := GetStringInput;
+              Input := UpperString(Input);
 
-              if (Input <> 'Y') and (Input <> 'N') then
+              if (Input <> 'Y') and
+                 (Input <> 'N') then
+              begin
                 Writeln('Please enter Y or N.');
-            until (Input = 'Y') or (Input = 'N');
+              end;
+
+            until (Input = 'Y') or
+                  (Input = 'N');
 
             PromotionChoice := (Input = 'Y');
           end;
 
-          MakeMove(Board, FromCol, FromRow, ToCol, ToRow, PromotionChoice, CapturedPieces);
+          MakeMove(
+            Board,
+            FromCol,
+            FromRow,
+            ToCol,
+            ToRow,
+            PromotionChoice,
+            CapturedPieces
+          );
+
           MoveComplete := True;
         end
-      else
+        else
         begin
           HandleError(1);
           PauseForUser;
         end;
+      end;
+
     until MoveComplete;
-    
+
     SwitchPlayer(CurrentPlayer);
 
     if DifficultyLevel > 0 then
       Exit;
+
   until False;
 end;
 
