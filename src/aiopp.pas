@@ -123,7 +123,11 @@ begin
   EvaluateBoard := Score;
 end;
 
-function Minimax(var Board: TBoard; CurrentPlayer, AIPlayer: TPlayer; Depth, Alpha, Beta: integer; var CapturedPieces: TCapturedPieces): integer;
+function Minimax(
+  var Board: TBoard;
+  CurrentPlayer, AIPlayer: TPlayer;
+  Depth, Alpha, Beta: integer;
+  var CapturedPieces: TCapturedPieces): integer;
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
@@ -286,7 +290,11 @@ begin
   end;
 end;
 
-procedure MinimaxMove(var Board: TBoard; AIPlayer: TPlayer; Depth: integer; var CapturedPieces: TCapturedPieces);
+procedure MinimaxMove(
+  var Board: TBoard;
+  AIPlayer: TPlayer;
+  Depth: integer;
+  var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;

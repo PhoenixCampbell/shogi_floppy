@@ -36,8 +36,16 @@ function UnpromotePiece(Piece: TPiece): TPiece;
 procedure SetupBoard(var Board: TBoard);
 procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
-procedure MakeMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; Promote: boolean; var CapturedPieces: TCapturedPieces);
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
+procedure MakeMove(
+  var Board: TBoard;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Promote: boolean;
+  var CapturedPieces: TCapturedPieces);
+procedure PlayGame(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
+  var CapturedPieces: TCapturedPieces);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
 procedure SaveGame(var Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
@@ -113,7 +121,9 @@ begin
   IsInsideBoard := (Col >= 1) and (Col <= 9) and (Row >= 1) and (Row <= 9);
 end;
 
-function IsValidMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
+function IsValidMove(var Board: TBoard;
+                      FromCol, FromRow, ToCol, ToRow: integer;
+                      var CurrentPlayer: TPlayer): boolean;
 var
   i: integer;
 begin
@@ -214,7 +224,7 @@ begin
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
-    (* maybe make a function for gold so all pieces that move like it follow the same logic instead of rewriting *)
+    (* maybe make a function for gold so all pieces that move like ituse similar logic *)
     Bishop:
       begin
         (* any number of steps diagonally*)
@@ -724,7 +734,11 @@ begin
   Board[FromCol, FromRow].Owner := NoPlayer;
 end;
 
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
+procedure PlayGame(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
+  var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   MoveComplete: boolean;

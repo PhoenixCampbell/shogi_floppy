@@ -90,7 +90,7 @@ procedure PauseForUser;
 begin
   WriteLn;
   Write('Press any key to continue');
-  ReadKey;
+  Readln;
 end;
 
 procedure WriteLine(Text: string; VerticalOffset: integer);
