@@ -57,7 +57,7 @@ begin
   GetCharInput := Input[1];
 end;
 
-(* StrToIntDef does not exist apparently in turbo pascal 4.0, so this is to hopefully not run into compile issues when testing on Amstrad PPC *)
+(* StrToIntDef does not exist apparently in turbo pascal 4.0 *)
 function StrToIntDef(S : string; Default : integer) : integer;
 var
   ResultValue, ErrorCode   : integer;
