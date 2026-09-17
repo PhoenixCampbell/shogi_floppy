@@ -14,8 +14,13 @@ type
     Piece: TPiece;
     Owner: TPlayer;
   end;
-
   TBoard = array[1..9, 1..9] of TSquare;
+
+  TCapturedPieces = array[TPlayer, TPiece] of integer;
+  TMove = record
+    FromCol, FromRow, ToCol, ToRow: integer;
+    Promote: boolean;
+  end;
 
 const PieceValue: array[TPiece] of integer =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
@@ -23,11 +28,16 @@ const PieceValue: array[TPiece] of integer =
 function IsInsideBoard(Col, Row: integer): boolean;
 function IsValidMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
 function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
+function CanPromote(Piece: TPiece; FromRow, ToRow: integer; CurrentPlayer: TPlayer): boolean;
+function MustPromote(Piece: TPiece; ToRow: integer; CurrentPlayer: TPlayer): boolean;
+function PromotePiece(Piece: TPiece): TPiece;
+function UnpromotePiece(Piece: TPiece): TPiece;
 
 procedure SetupBoard(var Board: TBoard);
 procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
-procedure MakeMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer);
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
+procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
+procedure MakeMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; Promote: boolean; var CapturedPieces: TCapturedPieces);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
 procedure SaveGame(var Board: TBoard; FileName: string);
 procedure LoadGame(var Board: TBoard; FileName: string);
@@ -103,7 +113,7 @@ begin
   IsInsideBoard := (Col >= 1) and (Col <= 9) and (Row >= 1) and (Row <= 9);
 end;
 
-function IsValidMove( var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
+function IsValidMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
 var
   i: integer;
 begin
@@ -567,6 +577,64 @@ begin
   end;
 end;
 
+function CanPromote(Piece: TPiece; FromRow, ToRow: integer; CurrentPlayer: TPlayer): boolean;
+begin
+  CanPromote := False;
+
+  if not (Piece in [Pawn, Lance, Knight, SilverGeneral, Bishop, Rook]) then
+    Exit;
+
+  if CurrentPlayer = Sente then
+    CanPromote := (FromRow <= 3) or (ToRow <= 3)
+  else if CurrentPlayer = Gote then
+    CanPromote := (FromRow >= 7) or (ToRow >= 7);
+end;
+
+function MustPromote(Piece: TPiece; ToRow: integer; CurrentPlayer: TPlayer): boolean;
+begin
+  MustPromote := False;
+
+  case Piece of
+    Pawn, Lance:
+      if CurrentPlayer = Sente then
+        MustPromote := (ToRow = 1)
+      else if CurrentPlayer = Gote then
+        MustPromote := (ToRow = 9);
+
+    Knight:
+      if CurrentPlayer = Sente then
+        MustPromote := (ToRow <= 2)
+      else if CurrentPlayer = Gote then
+        MustPromote := (ToRow >= 8);
+  end;
+end;
+
+function PromotePiece(Piece: TPiece): TPiece;
+begin
+  case Piece of
+    Pawn: PromotePiece := PromotedPawn;
+    Lance: PromotePiece := PromotedLance;
+    Knight: PromotePiece := PromotedKnight;
+    SilverGeneral: PromotePiece := PromotedSilverGeneral;
+    Bishop: PromotePiece := DragonHorse;
+    Rook: PromotePiece := DragonKing;
+    else PromotePiece := Piece;
+  end;
+end;
+
+function UnpromotePiece(Piece: TPiece): TPiece;
+begin
+  case Piece of
+    PromotedPawn: UnpromotePiece := Pawn;
+    PromotedLance: UnpromotePiece := Lance;
+    PromotedKnight: UnpromotePiece := Knight;
+    PromotedSilverGeneral: UnpromotePiece := SilverGeneral;
+    DragonHorse: UnpromotePiece := Bishop;
+    DragonKing: UnpromotePiece := Rook;
+    else UnpromotePiece := Piece;
+  end;
+end;
+
 procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
 var
   Row, Col, BoardLeft, BoardTop: integer;
@@ -615,23 +683,53 @@ begin
       end;
 end;
 
-procedure MakeMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer);
+procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
+var
+  Player: TPlayer;
+  Piece: TPiece;
 begin
-  (* moving including piece and ownership *)
-  Board[ToCol, ToRow] :=
-    Board[FromCol, FromRow];
+  for Player := NoPlayer to Gote do
+    for Piece := None to King do
+      CapturedPieces[Player, Piece] := 0;
+end;
 
+procedure MakeMove(
+  var Board: TBoard;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Promote: boolean;
+  var CapturedPieces: TCapturedPieces
+);
+var
+  MovingPiece, CapturedPiece: TPiece;
+  MovingPlayer: TPlayer;
+begin
+  MovingPiece := Board[FromCol, FromRow].Piece;
+  MovingPlayer := Board[FromCol, FromRow].Owner;
+  CapturedPiece := Board[ToCol, ToRow].Piece;
 
-  (* Empty original square *)
+  if CapturedPiece <> None then
+  begin
+    CapturedPiece := UnpromotePiece(CapturedPiece);
+    CapturedPieces[MovingPlayer, CapturedPiece] :=
+      CapturedPieces[MovingPlayer, CapturedPiece] + 1;
+  end;
+
+  if Promote then
+    MovingPiece := PromotePiece(MovingPiece);
+
+  Board[ToCol, ToRow].Piece := MovingPiece;
+  Board[ToCol, ToRow].Owner := MovingPlayer;
+
   Board[FromCol, FromRow].Piece := None;
   Board[FromCol, FromRow].Owner := NoPlayer;
 end;
 
-procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte);
+procedure PlayGame(var Board: TBoard; var CurrentPlayer: TPlayer; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   MoveComplete: boolean;
   Input: string;
+  PromotionChoice: boolean;
 begin
   repeat
     MoveComplete := False;
@@ -644,9 +742,10 @@ begin
       Write('From where? (e.g. 9 9): ');
 
       Input := GetStringInput; (* Read input as string *)
-      if (UpCase(Input) = 'RESIGN') or (UpCase(Input) = 'END') or (UpCase(Input) = 'QUIT') or (UpCase(Input) = 'EXIT') then
+      if (UpCase(Input) = 'RESIGN') or (UpCase(Input) = 'END') or 
+          (UpCase(Input) = 'QUIT') or (UpCase(Input) = 'EXIT') then
       begin
-        Exit; (* Exit the game if user types 'resign' *)
+        Exit;
       end;
 
       (* This gives the user on either side an option to resign or end the game without being trapped in the game *)
@@ -676,7 +775,27 @@ begin
 
       if IsValidMove(Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
         begin
-          MakeMove(Board, FromCol, FromRow, ToCol, ToRow);
+          PromotionChoice := False;
+
+          if MustPromote(Board[FromCol, FromRow].Piece, ToRow, CurrentPlayer) then
+          begin
+            PromotionChoice := True;
+            Writeln('This piece must promote.');
+          end
+          else if CanPromote(Board[FromCol, FromRow].Piece, FromRow, ToRow, CurrentPlayer) then
+          begin
+            repeat
+              Write('Promote piece? (Y/N): ');
+              Input := UpCase(GetStringInput);
+
+              if (Input <> 'Y') and (Input <> 'N') then
+                Writeln('Please enter Y or N.');
+            until (Input = 'Y') or (Input = 'N');
+
+            PromotionChoice := (Input = 'Y');
+          end;
+
+          MakeMove(Board, FromCol, FromRow, ToCol, ToRow, PromotionChoice, CapturedPieces);
           MoveComplete := True;
         end
       else
