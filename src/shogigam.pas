@@ -175,7 +175,7 @@ begin
           IsValidMove := (ToCol = FromCol) and (ToRow > FromRow);
 
         (* check for blocking pieces *)
-        if IsValidMove then
+        if MoveValid then
         begin
           if CurrentPlayer = Sente then
           begin
@@ -227,7 +227,7 @@ begin
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
       end;
-    (* maybe make a function for gold so all pieces that move like ituse similar logic *)
+    (* maybe make a function for gold so all pieces that move similarly use same logic *)
     Bishop:
       begin
         (* any number of steps diagonally*)
@@ -759,8 +759,11 @@ begin
       Write('From where? (e.g. 9 9): ');
 
       Input := GetStringInput; (* Read input as string *)
-      if (UpCase(Input) = 'RESIGN') or (UpCase(Input) = 'END') or 
-          (UpCase(Input) = 'QUIT') or (UpCase(Input) = 'EXIT') then
+      Input := UpperString(Input);
+      if (Input = 'RESIGN') or
+          (Input = 'END') or
+          (Input = 'QUIT') or
+          (Input = 'EXIT') then
       begin
         Exit;
       end;
@@ -803,7 +806,7 @@ begin
           begin
             repeat
               Write('Promote piece? (Y/N): ');
-              Input := UpCase(GetStringInput);
+              Input := UpperString(GetStringInput);
 
               if (Input <> 'Y') and (Input <> 'N') then
                 Writeln('Please enter Y or N.');

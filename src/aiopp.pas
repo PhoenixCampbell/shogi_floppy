@@ -4,7 +4,10 @@ interface
 
 uses shogigam;
 
-procedure PlayAI(var Board: TBoard; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
+procedure PlayAI(
+  var Board: TBoard;
+  DifficultyLevel: byte;
+  var CapturedPieces: TCapturedPieces);
 
 implementation
 
@@ -370,11 +373,21 @@ begin
   (* Perform selected move *)
   if MoveFound then
   begin
-    MakeMove(Board, BestFromCol, BestFromRow, BestToCol, BestToRow, False, CapturedPieces);
+    MakeMove(
+      Board,
+      BestFromCol,
+      BestFromRow,
+      BestToCol,
+      BestToRow,
+      False,
+      CapturedPieces);
   end;
 end;
 
-procedure PlayAI(var Board: TBoard; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
+procedure PlayAI(
+  var Board: TBoard;
+  DifficultyLevel: byte;
+  var CapturedPieces: TCapturedPieces);
 const
   AIPlayer = Gote;
 begin

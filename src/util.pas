@@ -5,10 +5,11 @@ interface
 uses crt;
 
 function GetStringInput: string;
-function GetIntegerInput: Integer;
-function GetCharInput: Char;
+function GetIntegerInput: integer;
+function GetCharInput: char;
 function StrToIntDef(S : string; Default : integer) : integer;
-function InRange(Value, Min, Max: Integer): Boolean;
+function InRange(Value, Min, Max: integer): Boolean;
+function UpperString(const S: string): string;
 procedure CenterText(Text: string);
 procedure PauseForUser;
 procedure WriteLine(Text: string; VerticalOffset: integer);
@@ -24,10 +25,10 @@ begin
   GetStringInput := Input;
 end;
 
-function GetIntegerInput: Integer;
+function GetIntegerInput: integer;
 var
   Input: string;
-  Value, ErrorCode: Integer;
+  Value, ErrorCode: integer;
 begin
   repeat
     Readln(Input);
@@ -42,7 +43,7 @@ begin
   GetIntegerInput := Value;
 end;
 
-function GetCharInput: Char;
+function GetCharInput: char;
 var
   Input: string;
 begin
@@ -70,9 +71,18 @@ begin
     StrToIntDef := Default;
 end;
 
-function InRange(Value, Min, Max: Integer): Boolean;
+function InRange(Value, Min, Max: integer): Boolean;
 begin
   InRange := (Value >= Min) and (Value <= Max);
+end;
+
+function UpperString(const S: string): string;
+var
+  i: integer;
+begin
+  for i := 1 to Length(S) do
+    S[i] := UpCase(S[i]);
+  UpperString := S;
 end;
 
 procedure CenterText(Text: string);

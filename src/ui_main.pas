@@ -13,7 +13,7 @@ implementation
 
 procedure MainMenu;
 var
-  UserChoice: Integer;
+  UserChoice: integer;
 begin
   repeat
     ClrScr;
