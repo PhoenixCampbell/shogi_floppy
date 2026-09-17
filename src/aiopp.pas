@@ -4,7 +4,7 @@ interface
 
 uses shogigam;
 
-procedure PlayAI(var Board: TBoard; DifficultyLevel: byte);
+procedure PlayAI(var Board: TBoard; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
 
 implementation
 
@@ -23,7 +23,7 @@ begin
     OpponentOf := NoPlayer;
 end;
 
-procedure RandomMove(var Board: TBoard; AIPlayer: TPlayer);
+procedure RandomMove(var Board: TBoard; AIPlayer: TPlayer; var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
@@ -52,13 +52,7 @@ begin
       AIPlayer
     ) then
     begin
-      MakeMove(
-        Board,
-        FromCol,
-        FromRow,
-        ToCol,
-        ToRow
-      );
+      MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
 
       Exit;
     end;
@@ -66,7 +60,7 @@ begin
   until Attempts >= 500;
 end;
 
-procedure BasicAIMove(var Board: TBoard; AIPlayer: TPlayer);
+procedure BasicAIMove(var Board: TBoard; AIPlayer: TPlayer; var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
@@ -92,13 +86,7 @@ begin
             AIPlayer
           ) then
           begin
-            MakeMove(
-              Board,
-              FromCol,
-              FromRow,
-              ToCol,
-              ToRow
-            );
+            MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
 
             Exit;
           end;
@@ -135,7 +123,7 @@ begin
   EvaluateBoard := Score;
 end;
 
-function Minimax(var Board: TBoard; CurrentPlayer, AIPlayer: TPlayer; Depth, Alpha, Beta: integer): integer;
+function Minimax(var Board: TBoard; CurrentPlayer, AIPlayer: TPlayer; Depth, Alpha, Beta: integer; var CapturedPieces: TCapturedPieces): integer;
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
@@ -185,13 +173,7 @@ begin
               ToSquare := Board[ToCol, ToRow];
 
               (* Simulate move to test scoring possibility*)
-              MakeMove(
-                Board,
-                FromCol,
-                FromRow,
-                ToCol,
-                ToRow
-              );
+              MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
 
               Value := Minimax(
                 Board,
@@ -199,7 +181,8 @@ begin
                 AIPlayer,
                 Depth - 1,
                 Alpha,
-                Beta
+                Beta,
+                CapturedPieces
               );
 
               (* Restore board *)
@@ -263,13 +246,7 @@ begin
               ToSquare := Board[ToCol, ToRow];
 
               (* Simulate move *)
-              MakeMove(
-                Board,
-                FromCol,
-                FromRow,
-                ToCol,
-                ToRow
-              );
+              MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
 
               Value := Minimax(
                 Board,
@@ -277,7 +254,8 @@ begin
                 AIPlayer,
                 Depth - 1,
                 Alpha,
-                Beta
+                Beta,
+                CapturedPieces
               );
 
               (* Restore *)
@@ -308,7 +286,7 @@ begin
   end;
 end;
 
-procedure MinimaxMove(var Board: TBoard; AIPlayer: TPlayer; Depth: integer);
+procedure MinimaxMove(var Board: TBoard; AIPlayer: TPlayer; Depth: integer; var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   Direction: integer;
@@ -351,13 +329,7 @@ begin
             ToSquare := Board[ToCol, ToRow];
 
             (* Check move *)
-            MakeMove(
-              Board,
-              FromCol,
-              FromRow,
-              ToCol,
-              ToRow
-            );
+            MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
 
             Value := Minimax(
               Board,
@@ -365,7 +337,8 @@ begin
               AIPlayer,
               Depth - 1,
               -ScoreInfinity,
-              ScoreInfinity
+              ScoreInfinity,
+              CapturedPieces
             );
 
             (* Restore *)
@@ -389,27 +362,21 @@ begin
   (* Perform selected move *)
   if MoveFound then
   begin
-    MakeMove(
-      Board,
-      BestFromCol,
-      BestFromRow,
-      BestToCol,
-      BestToRow
-    );
+    MakeMove(Board, BestFromCol, BestFromRow, BestToCol, BestToRow, False, CapturedPieces);
   end;
 end;
 
-procedure PlayAI(var Board: TBoard; DifficultyLevel: byte);
+procedure PlayAI(var Board: TBoard; DifficultyLevel: byte; var CapturedPieces: TCapturedPieces);
 const
   AIPlayer = Gote;
 begin
   case DifficultyLevel of
     (* Easy *)
-    1: RandomMove(Board, AIPlayer);
+    1: RandomMove(Board, AIPlayer, CapturedPieces);
     (* Medium *)
-    2: BasicAIMove(Board, AIPlayer);
+    2: BasicAIMove(Board, AIPlayer, CapturedPieces);
     (* Hard *)
-    3: MinimaxMove(Board, AIPlayer, 3);
+    3: MinimaxMove(Board, AIPlayer, 3, CapturedPieces);
 
   end;
 end;
