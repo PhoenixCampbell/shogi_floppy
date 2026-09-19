@@ -2,7 +2,7 @@ unit aiopp;
 
 interface
 
-uses shogigam;
+uses shogigam, util;
 
 procedure PlayAI(
   var Board: TBoard;
@@ -136,6 +136,7 @@ var
   Direction: integer;
   Value, BestValue: integer;
   FromSquare, ToSquare: TSquare;
+  SavedCapturedPieces: TCapturedPieces;
   MoveFound: boolean;
 begin
   if Depth <= 0 then
@@ -178,6 +179,7 @@ begin
               (* save original value for restoration *)
               FromSquare := Board[FromCol, FromRow];
               ToSquare := Board[ToCol, ToRow];
+              SavedCapturedPieces := CapturedPieces;
 
               (* Simulate move to test scoring possibility*)
               MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
@@ -195,6 +197,7 @@ begin
               (* Restore board *)
               Board[FromCol, FromRow] := FromSquare;
               Board[ToCol, ToRow] := ToSquare;
+              CapturedPieces := SavedCapturedPieces;
 
               if Value > BestValue then
                 BestValue := Value;
@@ -251,6 +254,7 @@ begin
               (* Save OG position*)
               FromSquare := Board[FromCol, FromRow];
               ToSquare := Board[ToCol, ToRow];
+              SavedCapturedPieces := CapturedPieces;
 
               (* Simulate move *)
               MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
@@ -268,6 +272,7 @@ begin
               (* Restore *)
               Board[FromCol, FromRow] := FromSquare;
               Board[ToCol, ToRow] := ToSquare;
+              CapturedPieces := SavedCapturedPieces;
 
               if Value < BestValue then
                 BestValue := Value;
@@ -304,6 +309,7 @@ var
   BestFromCol, BestFromRow, BestToCol, BestToRow: integer;
   Value, BestValue: integer;
   FromSquare, ToSquare: TSquare;
+  SavedCapturedPieces: TCapturedPieces;
   MoveFound: boolean;
 begin
   BestValue := -ScoreInfinity;
@@ -338,6 +344,7 @@ begin
             (* Hold Board State*)
             FromSquare := Board[FromCol, FromRow];
             ToSquare := Board[ToCol, ToRow];
+            SavedCapturedPieces := CapturedPieces;
 
             (* Check move *)
             MakeMove(Board, FromCol, FromRow, ToCol, ToRow, False, CapturedPieces);
@@ -355,6 +362,7 @@ begin
             (* Restore *)
             Board[FromCol, FromRow] := FromSquare;
             Board[ToCol, ToRow] := ToSquare;
+            CapturedPieces := SavedCapturedPieces;
 
             if Value > BestValue then
             begin
