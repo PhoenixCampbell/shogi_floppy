@@ -125,6 +125,123 @@ begin
   PlayGame(Board, CurrentPlayer, 0, CapturedPieces);
 end;
 
+procedure DisplayMovementRule(PieceName: string);
+begin
+  ClrScr;
+  CenterText(PieceName + ' Movement');
+  Writeln;
+  Writeln('The arrows show movement for Sente. Gote moves in reverse.');
+  Writeln;
+
+  if PieceName = 'Pawn' then
+  begin
+    Writeln('    ^');
+    Writeln('    |');
+    Writeln('  [ P ]');
+    Writeln;
+    Writeln('One square forward.');
+  end
+  else if PieceName = 'Lance' then
+  begin
+    Writeln('    ^');
+    Writeln('    |');
+    Writeln('    |');
+    Writeln('  [ L ]');
+    Writeln;
+    Writeln('Any number of squares forward, if unobstructed.');
+  end
+  else if PieceName = 'Knight' then
+  begin
+    Writeln('  ^   ^');
+    Writeln('   \ /');
+    Writeln('  [ N ]');
+    Writeln;
+    Writeln('Two squares forward and one square left or right.');
+  end
+  else if PieceName = 'Silver General' then
+  begin
+    Writeln('  \\ ^ /');
+    Writeln('   \\|/');
+    Writeln('   [ S ]');
+    Writeln('   /   \\');
+    Writeln;
+    Writeln('One square forward, forward-diagonal, or backward-diagonal.');
+    Writeln('Sideways and straight backward are not allowed.');
+  end
+  else if PieceName = 'Gold General' then
+  begin
+    Writeln('  \\ ^ /');
+    Writeln('   \\|/');
+    Writeln('<-[ G ]->');
+    Writeln('    |');
+    Writeln('    v');
+    Writeln;
+    Writeln('One square forward, forward-diagonal, sideways,');
+    Writeln('or straight backward. Not backward-diagonal.');
+  end
+  else if (PieceName = 'Promoted Pawn') or
+          (PieceName = 'Promoted Lance') or
+          (PieceName = 'Promoted Knight') or
+          (PieceName = 'Promoted Silver General') then
+  begin
+    Writeln('  \\ ^ /');
+    Writeln('   \\|/');
+    Writeln('<-[ + ]->');
+    Writeln('    |');
+    Writeln('    v');
+    Writeln;
+    Writeln('Moves like a Gold General.');
+  end
+  else if PieceName = 'Bishop' then
+  begin
+    Writeln('\\       /');
+    Writeln('  \\   /');
+    Writeln('   [ B ]');
+    Writeln('  /     \\');
+    Writeln('/         \\');
+    Writeln;
+    Writeln('Any number of squares diagonally, if unobstructed.');
+  end
+  else if PieceName = 'Rook' then
+  begin
+    Writeln('    ^');
+    Writeln('    |');
+    Writeln('<--[ R ]-->');
+    Writeln('    |');
+    Writeln('    v');
+    Writeln;
+    Writeln('Any number of squares horizontally or vertically, if unobstructed.');
+  end
+  else if PieceName = 'Dragon Horse' then
+  begin
+    Writeln('\\     ^     /');
+    Writeln('  \\   |   /');
+    Writeln('<---[ H ]--->');
+    Writeln('  /   |   \\');
+    Writeln('/     v     \\');
+    Writeln;
+    Writeln('Moves like a Bishop, or one square orthogonally.');
+  end
+  else if PieceName = 'Dragon King' then
+  begin
+    Writeln('  \\  ^  /');
+    Writeln('<---[ D ]--->');
+    Writeln('  /  v  \\');
+    Writeln;
+    Writeln('Moves like a Rook, or one square diagonally.');
+  end
+  else if PieceName = 'King' then
+  begin
+    Writeln('  \\ ^ /');
+    Writeln('<--[ K ]-->');
+    Writeln('  / v \\');
+    Writeln;
+    Writeln('One square in any direction.');
+  end;
+
+  PauseForUser;
+end;
+
 procedure DisplayRules;
 const
   PieceNames: array[TPiece] of string[24] =
@@ -158,6 +275,21 @@ begin
   end;
 
   PauseForUser;
+
+  DisplayMovementRule('Pawn');
+  DisplayMovementRule('Lance');
+  DisplayMovementRule('Knight');
+  DisplayMovementRule('Silver General');
+  DisplayMovementRule('Gold General');
+  DisplayMovementRule('Promoted Pawn');
+  DisplayMovementRule('Promoted Lance');
+  DisplayMovementRule('Promoted Knight');
+  DisplayMovementRule('Promoted Silver General');
+  DisplayMovementRule('Bishop');
+  DisplayMovementRule('Rook');
+  DisplayMovementRule('Dragon Horse');
+  DisplayMovementRule('Dragon King');
+  DisplayMovementRule('King');
 
   ClrScr;
 
