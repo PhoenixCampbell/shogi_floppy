@@ -80,7 +80,7 @@ begin
     if CurrentPlayer = Gote then
     begin
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
       Writeln;
       Writeln('Computer is moving...');
 
