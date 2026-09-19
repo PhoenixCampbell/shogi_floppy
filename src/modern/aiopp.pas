@@ -4,7 +4,6 @@ interface
 
 uses shogigam, util;
 
-function KingSafetyScore(var Board: TBoard; Player: TPlayer): integer; forward;
 procedure PlayAI(
   var Board: TBoard;
   DifficultyLevel: byte;
@@ -230,6 +229,8 @@ begin
 
   EvaluateBoard := Score;
 end;
+
+function KingSafetyScore(var Board: TBoard; Player: TPlayer): integer; forward;
 
 function EvaluateStrategicMove(
   var Board: TBoard;
