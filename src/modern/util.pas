@@ -15,14 +15,8 @@ type
   end;
   TBoard = array[1..9, 1..9] of TSquare;
   TCapturedPieces = array[TPlayer, TPiece] of integer;
-  TMove = record
-    FromCol, FromRow, ToCol, ToRow: integer;
-    Promote: boolean;
-  end;
-
 function GetStringInput: string;
 function GetIntegerInput: integer;
-function GetCharInput: char;
 function StrToIntDef(S : string; Default : integer) : integer;
 function InRange(Value, Min, Max: integer): Boolean;
 function UpperString(S: string): string;
@@ -38,10 +32,25 @@ function IsValidDrop(
   Piece: TPiece;
   Col, Row: integer;
   CurrentPlayer: TPlayer): boolean;
-function IsValidMove(
+function IsSquareAttacked(
+  var Board: TBoard;
+  Col, Row: integer;
+  AttackingPlayer: TPlayer): boolean;
+function IsInCheck(var Board: TBoard; Player: TPlayer): boolean;
+function IsLegalMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
-  var CurrentPlayer: TPlayer): boolean;
+  CurrentPlayer: TPlayer;
+  Promote: boolean): boolean;
+function IsCheckmate(
+  var Board: TBoard;
+  Player: TPlayer;
+  var CapturedPieces: TCapturedPieces): boolean;
+function IsPawnDropMate(
+  var Board: TBoard;
+  Col, Row: integer;
+  Player: TPlayer;
+  var CapturedPieces: TCapturedPieces): boolean;
 
 procedure CenterText(Text: string);
 procedure PauseForUser;
@@ -74,21 +83,6 @@ begin
   until ErrorCode = 0;
 
   GetIntegerInput := Value;
-end;
-
-function GetCharInput: char;
-var
-  Input: string;
-begin
-  repeat
-    Readln(Input);
-
-    if Length(Input) <> 1 then
-      Write('Invalid input. Please enter one character: ');
-
-  until Length(Input) = 1;
-
-  GetCharInput := Input[1];
 end;
 
 (* StrToIntDef does not exist apparently in turbo pascal 4.0 *)
@@ -344,7 +338,7 @@ begin
   IsValidDrop := True;
 end;
 
-function IsValidMove(
+function IsPseudoLegalMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
   var CurrentPlayer: TPlayer): boolean;
@@ -352,7 +346,7 @@ var
   i: integer;
   MoveValid: boolean;
 begin
-  IsValidMove := False;
+  IsPseudoLegalMove := False;
 
   (* check if legally on board *)
   if not IsInsideBoard(FromCol, FromRow) then
@@ -385,20 +379,20 @@ begin
       begin
         (* one step forward *)
         if CurrentPlayer = Sente then
-          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow - 1)
+          IsPseudoLegalMove := (ToCol = FromCol) and (ToRow = FromRow - 1)
         else
-          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow + 1);
+          IsPseudoLegalMove := (ToCol = FromCol) and (ToRow = FromRow + 1);
       end;
 
     Lance:
       begin
         (* any number steps only forward *)
         if CurrentPlayer = Sente then
-          IsValidMove := (ToCol = FromCol) and (ToRow < FromRow)
+          IsPseudoLegalMove := (ToCol = FromCol) and (ToRow < FromRow)
         else
-          IsValidMove := (ToCol = FromCol) and (ToRow > FromRow);
+          IsPseudoLegalMove := (ToCol = FromCol) and (ToRow > FromRow);
 
-        MoveValid := IsValidMove;
+        MoveValid := IsPseudoLegalMove;
 
         (* check for blocking pieces *)
         if MoveValid then
@@ -417,38 +411,38 @@ begin
           end;
         end;
 
-        isValidMove := MoveValid;
+        IsPseudoLegalMove := MoveValid;
       end;
 
     Knight:
       begin
         (* two forward, one left/right *)
         if CurrentPlayer = Sente then
-          IsValidMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 2)
+          IsPseudoLegalMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 2)
         else
-          IsValidMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 2);
+          IsPseudoLegalMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 2);
       end;
 
     SilverGeneral:
       begin
         (* one step diagonally any direction or straight ahead *)
         if CurrentPlayer = Sente then
-          IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
+          IsPseudoLegalMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1))
         else
-          IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
+                          IsPseudoLegalMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
                           ((ToCol = FromCol) and (ToRow = FromRow + 1));
       end;
 
     GoldGeneral:
       begin
         if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
                           ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
         else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
@@ -459,7 +453,7 @@ begin
         (* any number of steps diagonally*)
         if Abs(ToCol - FromCol) = Abs(ToRow - FromRow) then
         begin
-          IsValidMove := True;
+          IsPseudoLegalMove := True;
 
           (* Check for blocking pieces *)
           if ToCol > FromCol then
@@ -469,14 +463,14 @@ begin
               (* Moving diagonally down-right *)
               for i := 1 to ToCol - FromCol - 1 do
                 if Board[FromCol + i, FromRow + i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end
             else
             begin
               (* Moving diagonally up-right *)
               for i := 1 to ToCol - FromCol - 1 do
                 if Board[FromCol + i, FromRow - i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end;
           end
           else
@@ -486,14 +480,14 @@ begin
               (* Moving diagonally down-left *)
               for i := 1 to FromCol - ToCol - 1 do
                 if Board[FromCol - i, FromRow + i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end
             else
             begin
               (* Moving diagonally up-left *)
               for i := 1 to FromCol - ToCol - 1 do
                 if Board[FromCol - i, FromRow - i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end;
           end;
         end;
@@ -504,7 +498,7 @@ begin
         (* vertical or horizontal any number of steps*)
         if (ToCol = FromCol) or (ToRow = FromRow) then
         begin
-          IsValidMove := True;
+          IsPseudoLegalMove := True;
 
           (* Check for blocking pieces *)
           if ToCol = FromCol then
@@ -515,14 +509,14 @@ begin
               (* Moving down *)
               for i := FromRow + 1 to ToRow - 1 do
                 if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end
             else
             begin
               (* Moving up *)
               for i := ToRow + 1 to FromRow - 1 do
                 if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end;
           end
           else
@@ -533,14 +527,14 @@ begin
               (* Moving right *)
               for i := FromCol + 1 to ToCol - 1 do
                 if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end
             else
             begin
               (* Moving left *)
               for i := ToCol + 1 to FromCol - 1 do
                 if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end;
           end;
         end;
@@ -549,18 +543,18 @@ begin
     King:
       begin
         (* one step any direction*)
-        IsValidMove := (Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1);
+        IsPseudoLegalMove := (Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1);
       end;
 
     PromotedPawn:
       begin
         if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
                           ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
         else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
@@ -569,12 +563,12 @@ begin
     PromotedLance:
       begin
         if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
                           ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
         else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
@@ -583,12 +577,12 @@ begin
     PromotedKnight:
       begin
         if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
                           ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
         else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
@@ -597,12 +591,12 @@ begin
     PromotedSilverGeneral:
       begin
         if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
                           ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
         else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
+          IsPseudoLegalMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
                           ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
                           ((ToCol = FromCol) and (ToRow = FromRow - 1));
@@ -614,7 +608,7 @@ begin
         if (Abs(ToCol - FromCol) = Abs(ToRow - FromRow)) or
           ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) then
         begin
-          IsValidMove := True;
+          IsPseudoLegalMove := True;
 
           (* Check for blocking pieces for diagonal moves *)
           if Abs(ToCol - FromCol) = Abs(ToRow - FromRow) then
@@ -626,14 +620,14 @@ begin
                 (* Moving diagonally down-right *)
                 for i := 1 to ToCol - FromCol - 1 do
                   if Board[FromCol + i, FromRow + i].Piece <> None then
-                    IsValidMove := False;
+                    IsPseudoLegalMove := False;
               end
               else
               begin
                 (* Moving diagonally up-right *)
                 for i := 1 to ToCol - FromCol - 1 do
                   if Board[FromCol + i, FromRow - i].Piece <> None then
-                    IsValidMove := False;
+                    IsPseudoLegalMove := False;
               end;
             end
             else
@@ -643,14 +637,14 @@ begin
                 (* Moving diagonally down-left *)
                 for i := 1 to FromCol - ToCol - 1 do
                   if Board[FromCol - i, FromRow + i].Piece <> None then
-                    IsValidMove := False;
+                    IsPseudoLegalMove := False;
               end
               else
               begin
                 (* Moving diagonally up-left *)
                 for i := 1 to FromCol - ToCol - 1 do
                   if Board[FromCol - i, FromRow - i].Piece <> None then
-                    IsValidMove := False;
+                    IsPseudoLegalMove := False;
               end;
             end;
           end;
@@ -663,7 +657,7 @@ begin
         if (ToCol = FromCol) or (ToRow = FromRow) or
           ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) then
         begin
-          IsValidMove := True;
+          IsPseudoLegalMove := True;
 
           (* Check for blocking pieces for orthogonal moves *)
           if ToCol = FromCol then
@@ -674,14 +668,14 @@ begin
               (* Moving down *)
               for i := FromRow + 1 to ToRow - 1 do
                 if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end
             else
             begin
               (* Moving up *)
               for i := ToRow + 1 to FromRow - 1 do
                 if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end;
           end
           else
@@ -692,21 +686,171 @@ begin
               (* Moving right *)
               for i := FromCol + 1 to ToCol - 1 do
                 if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end
             else
             begin
               (* Moving left *)
               for i := ToCol + 1 to FromCol - 1 do
                 if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
+                  IsPseudoLegalMove := False;
             end;
           end;
         end;
       end;
     else
-      IsValidMove := False;
+      IsPseudoLegalMove := False;
   end;
+end;
+
+function IsSquareAttacked(
+  var Board: TBoard;
+  Col, Row: integer;
+  AttackingPlayer: TPlayer): boolean;
+var
+  FromCol, FromRow: integer;
+begin
+  IsSquareAttacked := False;
+
+  if not (AttackingPlayer in [Sente, Gote]) then
+    Exit;
+
+  for FromRow := 1 to 9 do
+    for FromCol := 1 to 9 do
+      if (Board[FromCol, FromRow].Owner = AttackingPlayer) and
+         IsPseudoLegalMove(Board, FromCol, FromRow, Col, Row, AttackingPlayer) then
+      begin
+        IsSquareAttacked := True;
+        Exit;
+      end;
+end;
+
+function IsInCheck(var Board: TBoard; Player: TPlayer): boolean;
+var
+  Col, Row: integer;
+  Opponent: TPlayer;
+begin
+  IsInCheck := False;
+
+  if Player = Sente then
+    Opponent := Gote
+  else if Player = Gote then
+    Opponent := Sente
+  else
+    Exit;
+
+  for Row := 1 to 9 do
+    for Col := 1 to 9 do
+      if (Board[Col, Row].Piece = King) and
+         (Board[Col, Row].Owner = Player) then
+      begin
+        IsInCheck := IsSquareAttacked(Board, Col, Row, Opponent);
+        Exit;
+      end;
+
+  IsInCheck := True;
+end;
+
+function IsLegalMove(
+  var Board: TBoard;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  CurrentPlayer: TPlayer;
+  Promote: boolean): boolean;
+var
+  SimulatedBoard: TBoard;
+  MovingPiece: TPiece;
+begin
+  IsLegalMove := False;
+
+  if not IsPseudoLegalMove(
+    Board, FromCol, FromRow, ToCol, ToRow, CurrentPlayer) then
+    Exit;
+
+  if Board[ToCol, ToRow].Piece = King then
+    Exit;
+
+  SimulatedBoard := Board;
+  MovingPiece := SimulatedBoard[FromCol, FromRow].Piece;
+  if Promote then
+    MovingPiece := PromotePiece(MovingPiece);
+
+  SimulatedBoard[ToCol, ToRow].Piece := MovingPiece;
+  SimulatedBoard[ToCol, ToRow].Owner := CurrentPlayer;
+  SimulatedBoard[FromCol, FromRow].Piece := None;
+  SimulatedBoard[FromCol, FromRow].Owner := NoPlayer;
+
+  IsLegalMove := not IsInCheck(SimulatedBoard, CurrentPlayer);
+end;
+
+function IsCheckmate(
+  var Board: TBoard;
+  Player: TPlayer;
+  var CapturedPieces: TCapturedPieces): boolean;
+var
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Piece: TPiece;
+  SimulatedBoard: TBoard;
+begin
+  IsCheckmate := False;
+
+  if not IsInCheck(Board, Player) then
+    Exit;
+
+  for FromRow := 1 to 9 do
+    for FromCol := 1 to 9 do
+      if Board[FromCol, FromRow].Owner = Player then
+        for ToRow := 1 to 9 do
+          for ToCol := 1 to 9 do
+            if IsLegalMove(
+              Board, FromCol, FromRow, ToCol, ToRow, Player, False) then
+              Exit;
+
+  for Piece := Pawn to Rook do
+    if CapturedPieces[Player, Piece] > 0 then
+      for ToRow := 1 to 9 do
+        for ToCol := 1 to 9 do
+          if IsValidDrop(Board, Piece, ToCol, ToRow, Player) then
+          begin
+            SimulatedBoard := Board;
+            SimulatedBoard[ToCol, ToRow].Piece := Piece;
+            SimulatedBoard[ToCol, ToRow].Owner := Player;
+
+            if not IsInCheck(SimulatedBoard, Player) then
+              Exit;
+          end;
+
+  IsCheckmate := True;
+end;
+
+function IsPawnDropMate(
+  var Board: TBoard;
+  Col, Row: integer;
+  Player: TPlayer;
+  var CapturedPieces: TCapturedPieces): boolean;
+var
+  Opponent: TPlayer;
+  SimulatedBoard: TBoard;
+begin
+  IsPawnDropMate := False;
+
+  if Player = Sente then
+    Opponent := Gote
+  else if Player = Gote then
+    Opponent := Sente
+  else
+    Exit;
+
+  if CapturedPieces[Player, Pawn] <= 0 then
+    Exit;
+  if not IsValidDrop(Board, Pawn, Col, Row, Player) then
+    Exit;
+
+  SimulatedBoard := Board;
+  SimulatedBoard[Col, Row].Piece := Pawn;
+  SimulatedBoard[Col, Row].Owner := Player;
+
+  IsPawnDropMate := IsCheckmate(
+    SimulatedBoard, Opponent, CapturedPieces);
 end;
 
 procedure CenterText(Text: string);
@@ -723,7 +867,7 @@ end;
 procedure PauseForUser;
 begin
   WriteLn;
-  Write('Press any key to continue');
+  Write('Press ENTER to continue');
   Readln;
 end;
 
