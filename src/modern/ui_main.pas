@@ -58,6 +58,8 @@ begin
   Writeln('1. Easy');
   Writeln('2. Medium');
   Writeln('3. Hard');
+  Writeln('4. Attack-Centered');
+  Writeln('5. Defense-Centered');
 
   repeat
     GotoXY(1, 22);
@@ -65,10 +67,10 @@ begin
 
     DifficultyLevel := GetIntegerInput; (* Get integer input *)
 
-    if (DifficultyLevel < 1) or (DifficultyLevel > 3) then
-      Writeln('Invalid input. Please enter a number between 1 and 3.');
+    if (DifficultyLevel < 1) or (DifficultyLevel > 5) then
+      Writeln('Invalid input. Please enter a number between 1 and 5.');
 
-  until (DifficultyLevel >= 1) and (DifficultyLevel <= 3);
+  until (DifficultyLevel >= 1) and (DifficultyLevel <= 5);
 
   (* Writeln('Single Player  Difficulty: ', DifficultyLevel); *)
   CurrentPlayer := Sente;
@@ -77,8 +79,14 @@ begin
   repeat
     PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
 
+    if CurrentPlayer <> Gote then
+      Exit;
+
     if CurrentPlayer = Gote then
     begin
+      if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+        Exit;
+
       ClrScr;
       DisplayBoard(Board, CurrentPlayer, CapturedPieces);
       Writeln;
@@ -87,6 +95,18 @@ begin
       PlayAI(Board, DifficultyLevel, CapturedPieces);
 
       SwitchPlayer(CurrentPlayer);
+
+      if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+      begin
+        ClrScr;
+        DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+        if CurrentPlayer = Sente then
+          Writeln('Checkmate. Gote wins.')
+        else
+          Writeln('Checkmate. Sente wins.');
+        PauseForUser;
+        Exit;
+      end;
     end;
 
   until False;
@@ -112,6 +132,8 @@ const
       'Promoted Lance', 'Promoted Pawn', 'Bishop', 'Rook', 'Dragon Horse',
       'Dragon King', 'King'
     );
+  DisplayPieceValues: array[TPiece] of integer =
+    (0, 1, 3, 4, 5, 6, 6, 6, 6, 6, 8, 10, 13, 15, 0);
 var
   Piece: TPiece;
 begin
@@ -129,7 +151,10 @@ begin
 
     GotoXY(28, WhereY);
 
-    Writeln(PieceValue[Piece]);
+    if Piece = King then
+      Writeln('Priceless')
+    else
+      Writeln(DisplayPieceValues[Piece]);
   end;
 
   PauseForUser;
@@ -140,11 +165,12 @@ begin
   Writeln;
   Writeln('Drop Pieces:');
   Writeln('  - Press ''D'' to drop a piece');
-  Writeln('  - Select piece from your captured pieces');
-  Writeln('  - Choose destination square');
+  Writeln('  - Type its letter: P, L, N, S, G, B, or R');
+  Writeln('  - Enter the destination column, then row');
   Writeln;
   Writeln('Escape Game:');
-  Writeln('  - Typing ''resign'', ''end'', ''quit'', or ''exit'' at the beginning on your turn will end the game');
+  Writeln('  - Typing ''resign'', ''end'', ''quit'', or ''exit'' at the beginning on');
+  Writeln('  your turn will end the game');
   Writeln;
   Writeln('General Controls:');
   Writeln('  - Enter Column / Row to select a square, pressing ''ENTER'' ');
