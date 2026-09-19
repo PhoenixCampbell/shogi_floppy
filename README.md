@@ -145,11 +145,6 @@ There are a few things to work on in order to make this a fully usable game. I h
 
 ### Gameplay Improvements
 
-- record captured piece as 'in hand' by attacker
-- allow drop of captured piece anywhere on board ('drop' button added during turn would require menu before game to say what button opens drop option)
-- pawns can not be dropped in same lane as an occupied column (double pawn)
-- pawn can not be dropped for checkmate
-- pawn, lance, and knight can not be dropped where there are no longer valid moves ie last row or last two rows for knight without promoting automatically
 - checkmate logic during move, after entered TO/FROM
 
 ---
