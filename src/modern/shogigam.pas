@@ -286,7 +286,10 @@ begin
           DropCol := 10 - GetIntegerInput;
           DropRow := GetIntegerInput;
 
-          if IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) then
+          if IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
+             not ((DropPiece = Pawn) and
+                  IsPawnDropMate(
+                    Board, DropCol, DropRow, CurrentPlayer, CapturedPieces)) then
           begin
             MakeDrop(Board, DropCol, DropRow, DropPiece,
               CapturedPieces, CurrentPlayer);
@@ -343,13 +346,14 @@ begin
       (* Only process move if all coordinates were valid *)
       if InputValid then
       begin
-        if IsValidMove(
+        if IsLegalMove(
           Board,
           FromCol,
           FromRow,
           ToCol,
           ToRow,
-          CurrentPlayer
+          CurrentPlayer,
+          False
         ) then
         begin
           PromotionChoice := False;
@@ -410,6 +414,18 @@ begin
     until MoveComplete;
 
     SwitchPlayer(CurrentPlayer);
+
+    if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+    begin
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      if CurrentPlayer = Sente then
+        Writeln('Checkmate. Gote wins.')
+      else
+        Writeln('Checkmate. Sente wins.');
+      PauseForUser;
+      Exit;
+    end;
 
     if DifficultyLevel > 0 then
       Exit;
