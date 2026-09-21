@@ -1,6 +1,6 @@
 <h1 align="center">
    <b>Shogi Game</b><br>
-   <img src="images/shogi_background.png" width="500" alt="Shogi Board">
+   <img src="images/shogi_background.png" width="900" alt="Shogi Board">
 </h1>
 
 ## Overview
