@@ -1,10 +1,11 @@
-# Shogi Game
-
-![Shogi Board](images/shogi_background.png)
+<p align="center">
+   <b>Shogi Game</b><br>
+   <img src="images/shogi_background.png" width="500" alt="Shogi Board">
+</p>
 
 ## Overview
 
-This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC. It should also work for any other system that can run Pascal but was specifically sized and filed to run on a 3.5" 720kB DD Floppy Disk. The game includes single-player mode against three different levels of AI opponents and two-player local multiplayer mode. Additionally, it supports saving and loading games to disk.
+This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC. It should also work for any other system that can run Pascal but was specifically sized and filed to run on a 3.5" 720kB DD Floppy Disk. The game includes single-player mode against five different levels of AI opponents and two-player local multiplayer mode. Additionally, it supports saving and loading games to disk.
 
 ## File Sizes From 1.0.0 release
 
