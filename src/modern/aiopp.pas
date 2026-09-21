@@ -133,16 +133,20 @@ begin
 end;
 
 function MovePriority(var Board: TBoard; Move: TAIMove): integer;
+var
+  Priority: integer;
 begin
-  MovePriority := 0;
+  Priority := 0;
 
   if Move.IsDrop then
-    MovePriority := 1
+    Priority := 1
   else if Board[Move.ToCol, Move.ToRow].Piece <> None then
-    MovePriority := AIPieceValue[Board[Move.ToCol, Move.ToRow].Piece] * 10;
+    Priority := AIPieceValue[Board[Move.ToCol, Move.ToRow].Piece] * 10;
 
   if Move.Promote then
-    MovePriority := MovePriority + 20;
+    Priority := Priority + 20;
+
+  MovePriority := Priority;
 end;
 
 procedure OrderMoves(var Board: TBoard; var Moves: TAIMoveList; MoveCount: integer);
@@ -423,7 +427,10 @@ begin
         if BestValue > Alpha then
           Alpha := BestValue;
         if Beta <= Alpha then
-          Break;
+        begin
+          Quiescence := BestValue;
+          Exit;
+        end;
       end;
   end
   else
@@ -457,7 +464,10 @@ begin
         if BestValue < Beta then
           Beta := BestValue;
         if Beta <= Alpha then
-          Break;
+        begin
+          Quiescence := BestValue;
+          Exit;
+        end;
       end;
   end;
 
@@ -539,7 +549,10 @@ begin
     end;
 
     if Beta <= Alpha then
-      Break;
+    begin
+      Minimax := BestValue;
+      Exit;
+    end;
   end;
 
   Minimax := BestValue;

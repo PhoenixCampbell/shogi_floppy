@@ -388,11 +388,11 @@ begin
       begin
         (* any number steps only forward *)
         if CurrentPlayer = Sente then
-          IsPseudoLegalMove := (ToCol = FromCol) and (ToRow < FromRow)
+          MoveValid := (ToCol = FromCol) and (ToRow < FromRow)
         else
-          IsPseudoLegalMove := (ToCol = FromCol) and (ToRow > FromRow);
+          MoveValid := (ToCol = FromCol) and (ToRow > FromRow);
 
-        MoveValid := IsPseudoLegalMove;
+        IsPseudoLegalMove := MoveValid;
 
         (* check for blocking pieces *)
         if MoveValid then
