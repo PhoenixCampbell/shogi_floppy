@@ -1,8 +1,15 @@
 # Shogi Game
 
+![Shogi Board](images/shogi_background.png)
+
 ## Overview
 
 This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC. It should also work for any other system that can run Pascal but was specifically sized and filed to run on a 3.5" 720kB DD Floppy Disk. The game includes single-player mode against three different levels of AI opponents and two-player local multiplayer mode. Additionally, it supports saving and loading games to disk.
+
+## File Sizes From 1.0.0 release
+
+![Modern File Size after compilation through fpc](images/modern_size.png)
+![Amstrad File Size after compilation through tpc](images/amstrad_size.png)
 
 ## Table of Contents
 
@@ -149,6 +156,8 @@ There are a few things to work on in order to make this a fully usable game. I h
 
 - checkmate logic during move, after entered TO/FROM
   - to check after completing full game
+- Save and load games so that the player can pickup a game from the past onto the disk
+  - idea is while players are traveling, they can save their game while moving and pick it back up when they have the time
 
 ---
 
