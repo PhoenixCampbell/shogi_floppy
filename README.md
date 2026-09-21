@@ -1,7 +1,7 @@
-<p align="center">
+<h1 align="center">
    <b>Shogi Game</b><br>
    <img src="images/shogi_background.png" width="500" alt="Shogi Board">
-</p>
+</h1>
 
 ## Overview
 
