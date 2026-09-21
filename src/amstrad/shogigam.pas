@@ -2,53 +2,45 @@ unit shogigam;
 
 interface
 
-
 uses util, crt;
-
-type
-  TPlayer = (NoPlayer, Sente, Gote);
-  TPiece = (None, Pawn, Lance, Knight, SilverGeneral, GoldGeneral, 
-            PromotedSilverGeneral, PromotedKnight, PromotedLance, 
-            PromotedPawn, Bishop, Rook, DragonHorse, DragonKing, King);
-  TSquare = record
-    Piece: TPiece;
-    Owner: TPlayer;
-  end;
-  TBoard = array[1..9, 1..9] of TSquare;
-
-  TCapturedPieces = array[TPlayer, TPiece] of integer;
-  TMove = record
-    FromCol, FromRow, ToCol, ToRow: integer;
-    Promote: boolean;
-  end;
 
 const PieceValue: array[TPiece] of integer =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
 
-function IsInsideBoard(Col, Row: integer): boolean;
-function IsValidMove(var Board: TBoard; FromCol, FromRow, ToCol, ToRow: integer; var CurrentPlayer: TPlayer): boolean;
-function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
-function CanPromote(Piece: TPiece; FromRow, ToRow: integer; CurrentPlayer: TPlayer): boolean;
-function MustPromote(Piece: TPiece; ToRow: integer; CurrentPlayer: TPlayer): boolean;
-function PromotePiece(Piece: TPiece): TPiece;
-function UnpromotePiece(Piece: TPiece): TPiece;
-
 procedure SetupBoard(var Board: TBoard);
-procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
+procedure DisplayBoard(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  var CapturedPieces: TCapturedPieces);
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
 procedure MakeMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
   Promote: boolean;
   var CapturedPieces: TCapturedPieces);
+procedure MakeDrop(
+  var Board: TBoard;
+  Col, Row: integer;
+  Piece: TPiece;
+  var CapturedPieces: TCapturedPieces;
+  CurrentPlayer: TPlayer);
 procedure PlayGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
-procedure SaveGame(var Board: TBoard; FileName: string);
-procedure LoadGame(var Board: TBoard; FileName: string);
+procedure SaveGame(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  var CapturedPieces: TCapturedPieces;
+  FileName: string);
+procedure LoadGame(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  var CapturedPieces: TCapturedPieces;
+  FileName: string);
+
 implementation
 
 
@@ -116,548 +108,18 @@ begin
 
 end;
 
-function IsInsideBoard(Col, Row: integer): boolean;
-begin
-  IsInsideBoard := (Col >= 1) and (Col <= 9) and (Row >= 1) and (Row <= 9);
-end;
-
-function IsValidMove(var Board: TBoard;
-                      FromCol, FromRow, ToCol, ToRow: integer;
-                      var CurrentPlayer: TPlayer): boolean;
-var
-  i: integer;
-  MoveValid: boolean;
-begin
-  IsValidMove := False;
-
-  (* check if legally on board *)
-  if not IsInsideBoard(FromCol, FromRow) then
-    Exit;
-
-  (*placement must be on board *)
-  if not IsInsideBoard(ToCol, ToRow) then
-    Exit;
-
-  (* valid source space *)
-  if Board[FromCol, FromRow].Piece = None then
-    Exit;
-
-  (* Player owns piece *)
-  if Board[FromCol, FromRow].Owner <> CurrentPlayer then
-    Exit;
-
-  (* do not capture own piece *)
-  if Board[ToCol, ToRow].Owner = CurrentPlayer then
-    Exit;
-
-  (*cannot move to same space *)
-  if (FromCol = ToCol) and
-     (FromRow = ToRow) then
-    Exit;
-
-  (* piece specific rules *)
-  case Board[FromCol, FromRow].Piece of
-    Pawn:
-      begin
-        (* one step forward *)
-        if CurrentPlayer = Sente then
-          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow - 1)
-        else
-          IsValidMove := (ToCol = FromCol) and (ToRow = FromRow + 1);
-      end;
-
-    Lance:
-      begin
-        (* any number steps only forward *)
-        if CurrentPlayer = Sente then
-          IsValidMove := (ToCol = FromCol) and (ToRow < FromRow)
-        else
-          IsValidMove := (ToCol = FromCol) and (ToRow > FromRow);
-
-        (* check for blocking pieces *)
-        if MoveValid then
-        begin
-          if CurrentPlayer = Sente then
-          begin
-            for i := ToRow + 1 to FromRow - 1 do
-              if Board[FromCol, i].Piece <> None then
-                MoveValid := False;
-          end
-          else
-          begin
-            for i := FromRow + 1 to ToRow - 1 do
-              if Board[FromCol, i].Piece <> None then
-                MoveValid := False;
-          end;
-        end;
-
-        isValidMove := MoveValid;
-      end;
-
-    Knight:
-      begin
-        (* two forward, one left/right *)
-        if CurrentPlayer = Sente then
-          IsValidMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 2)
-        else
-          IsValidMove := (Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 2);
-      end;
-
-    SilverGeneral:
-      begin
-        (* one step diagonally any direction or straight ahead *)
-        if CurrentPlayer = Sente then
-          IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow - 1))
-        else
-          IsValidMove := ((Abs(ToCol - FromCol) = 1) and (Abs(ToRow - FromRow) = 1)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow + 1));
-      end;
-
-    GoldGeneral:
-      begin
-        if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
-                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
-        else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
-      end;
-    (* maybe make a function for gold so all pieces that move similarly use same logic *)
-    Bishop:
-      begin
-        (* any number of steps diagonally*)
-        if Abs(ToCol - FromCol) = Abs(ToRow - FromRow) then
-        begin
-          IsValidMove := True;
-          
-          (* Check for blocking pieces *)
-          if ToCol > FromCol then
-          begin
-            if ToRow > FromRow then
-            begin
-              (* Moving diagonally down-right *)
-              for i := 1 to ToCol - FromCol - 1 do
-                if Board[FromCol + i, FromRow + i].Piece <> None then
-                  IsValidMove := False;
-            end
-            else
-            begin
-              (* Moving diagonally up-right *)
-              for i := 1 to ToCol - FromCol - 1 do
-                if Board[FromCol + i, FromRow - i].Piece <> None then
-                  IsValidMove := False;
-            end;
-          end
-          else
-          begin
-            if ToRow > FromRow then
-            begin
-              (* Moving diagonally down-left *)
-              for i := 1 to FromCol - ToCol - 1 do
-                if Board[FromCol - i, FromRow + i].Piece <> None then
-                  IsValidMove := False;
-            end
-            else
-            begin
-              (* Moving diagonally up-left *)
-              for i := 1 to FromCol - ToCol - 1 do
-                if Board[FromCol - i, FromRow - i].Piece <> None then
-                  IsValidMove := False;
-            end;
-          end;
-        end;
-      end;
-
-    Rook:
-      begin
-        (* vertical or horizontal any number of steps*)
-        if (ToCol = FromCol) or (ToRow = FromRow) then
-        begin
-          IsValidMove := True;
-          
-          (* Check for blocking pieces *)
-          if ToCol = FromCol then
-          begin
-            (* Vertical movement *)
-            if ToRow > FromRow then
-            begin
-              (* Moving down *)
-              for i := FromRow + 1 to ToRow - 1 do
-                if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
-            end
-            else
-            begin
-              (* Moving up *)
-              for i := ToRow + 1 to FromRow - 1 do
-                if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
-            end;
-          end
-          else
-          begin
-            (* Horizontal movement *)
-            if ToCol > FromCol then
-            begin
-              (* Moving right *)
-              for i := FromCol + 1 to ToCol - 1 do
-                if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
-            end
-            else
-            begin
-              (* Moving left *)
-              for i := ToCol + 1 to FromCol - 1 do
-                if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
-            end;
-          end;
-        end;
-      end;
-
-    King:
-      begin
-        (* one step any direction*)
-        IsValidMove := (Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1);
-      end;
-
-    PromotedPawn:
-      begin
-        if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
-                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
-        else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
-      end;
-
-    PromotedLance:
-      begin
-        if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
-                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
-        else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
-      end;
-
-    PromotedKnight:
-      begin
-        if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
-                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
-        else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
-      end;
-
-    PromotedSilverGeneral:
-      begin
-        if CurrentPlayer = Sente then
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow - 1)) or (* forwards *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow - 1)) or (* diagonal forward *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or (* l and r *)
-                          ((ToCol = FromCol) and (ToRow = FromRow + 1)) (* backward *)
-        else
-          IsValidMove := ((ToCol = FromCol) and (ToRow = FromRow + 1)) or (* gote logic for same *)
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow + 1)) or
-                          ((Abs(ToCol - FromCol) = 1) and (ToRow = FromRow)) or
-                          ((ToCol = FromCol) and (ToRow = FromRow - 1));
-      end;
-
-    DragonHorse:
-      begin
-        (* moves like Bishop and one step orthogonally *)
-        if (Abs(ToCol - FromCol) = Abs(ToRow - FromRow)) or
-          ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) then
-        begin
-          IsValidMove := True;
-          
-          (* Check for blocking pieces for diagonal moves *)
-          if Abs(ToCol - FromCol) = Abs(ToRow - FromRow) then
-          begin
-            if ToCol > FromCol then
-            begin
-              if ToRow > FromRow then
-              begin
-                (* Moving diagonally down-right *)
-                for i := 1 to ToCol - FromCol - 1 do
-                  if Board[FromCol + i, FromRow + i].Piece <> None then
-                    IsValidMove := False;
-              end
-              else
-              begin
-                (* Moving diagonally up-right *)
-                for i := 1 to ToCol - FromCol - 1 do
-                  if Board[FromCol + i, FromRow - i].Piece <> None then
-                    IsValidMove := False;
-              end;
-            end
-            else
-            begin
-              if ToRow > FromRow then
-              begin
-                (* Moving diagonally down-left *)
-                for i := 1 to FromCol - ToCol - 1 do
-                  if Board[FromCol - i, FromRow + i].Piece <> None then
-                    IsValidMove := False;
-              end
-              else
-              begin
-                (* Moving diagonally up-left *)
-                for i := 1 to FromCol - ToCol - 1 do
-                  if Board[FromCol - i, FromRow - i].Piece <> None then
-                    IsValidMove := False;
-              end;
-            end;
-          end;
-        end;
-      end;
-
-    DragonKing:
-      begin
-        (* moves like Rook and one step diagonally *)
-        if (ToCol = FromCol) or (ToRow = FromRow) or
-          ((Abs(ToCol - FromCol) <= 1) and (Abs(ToRow - FromRow) <= 1)) then
-        begin
-          IsValidMove := True;
-          
-          (* Check for blocking pieces for orthogonal moves *)
-          if ToCol = FromCol then
-          begin
-            (* Vertical movement *)
-            if ToRow > FromRow then
-            begin
-              (* Moving down *)
-              for i := FromRow + 1 to ToRow - 1 do
-                if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
-            end
-            else
-            begin
-              (* Moving up *)
-              for i := ToRow + 1 to FromRow - 1 do
-                if Board[FromCol, i].Piece <> None then
-                  IsValidMove := False;
-            end;
-          end
-          else
-          begin
-            (* Horizontal movement *)
-            if ToCol > FromCol then
-            begin
-              (* Moving right *)
-              for i := FromCol + 1 to ToCol - 1 do
-                if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
-            end
-            else
-            begin
-              (* Moving left *)
-              for i := ToCol + 1 to FromCol - 1 do
-                if Board[i, FromRow].Piece <> None then
-                  IsValidMove := False;
-            end;
-          end;
-        end;
-      end;
-    else
-      IsValidMove := False;
-  end;
-end;
-
-function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
-begin
-  case Piece of
-    Pawn: 
-      begin
-        if Owner = Sente then
-          PieceToChar := 'P'
-        else
-          PieceToChar := 'p';
-      end;
-    Lance: 
-      begin
-        if Owner = Sente then
-          PieceToChar := 'L'
-        else
-          PieceToChar := 'l';
-      end;
-    Knight:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'N'
-        else
-          PieceToChar := 'n';
-      end;
-    SilverGeneral:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'S'
-        else
-          PieceToChar := 's';
-      end;
-    GoldGeneral:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'G'
-        else
-          PieceToChar := 'g';
-      end;
-    Bishop:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'B'
-        else
-          PieceToChar := 'b';
-      end;
-    Rook:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'R'
-        else
-          PieceToChar := 'r';
-      end;
-    King:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'K'
-        else
-          PieceToChar := 'k';
-      end;
-    PromotedPawn:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'T'
-        else
-          PieceToChar := 't';
-      end;
-    PromotedLance:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'M'
-        else
-          PieceToChar := 'm';
-      end;
-    PromotedKnight:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'Q'
-        else
-          PieceToChar := 'q';
-      end;
-    PromotedSilverGeneral:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'V'
-        else
-          PieceToChar := 'v';
-      end;
-    DragonHorse:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'H'
-        else
-          PieceToChar := 'h';
-      end;
-    DragonKing:
-      begin
-        if Owner = Sente then
-          PieceToChar := 'D'
-        else
-          PieceToChar := 'd';
-      end;
-
-    else
-      PieceToChar := ' ';
-  end;
-end;
-
-function CanPromote(Piece: TPiece; FromRow, ToRow: integer; CurrentPlayer: TPlayer): boolean;
-begin
-  CanPromote := False;
-
-  if not (Piece in [Pawn, Lance, Knight, SilverGeneral, Bishop, Rook]) then
-    Exit;
-
-  if CurrentPlayer = Sente then
-    CanPromote := (FromRow <= 3) or (ToRow <= 3)
-  else if CurrentPlayer = Gote then
-    CanPromote := (FromRow >= 7) or (ToRow >= 7);
-end;
-
-function MustPromote(Piece: TPiece; ToRow: integer; CurrentPlayer: TPlayer): boolean;
-begin
-  MustPromote := False;
-
-  case Piece of
-    Pawn, Lance:
-      if CurrentPlayer = Sente then
-        MustPromote := (ToRow = 1)
-      else if CurrentPlayer = Gote then
-        MustPromote := (ToRow = 9);
-
-    Knight:
-      if CurrentPlayer = Sente then
-        MustPromote := (ToRow <= 2)
-      else if CurrentPlayer = Gote then
-        MustPromote := (ToRow >= 8);
-  end;
-end;
-
-function PromotePiece(Piece: TPiece): TPiece;
-begin
-  case Piece of
-    Pawn: PromotePiece := PromotedPawn;
-    Lance: PromotePiece := PromotedLance;
-    Knight: PromotePiece := PromotedKnight;
-    SilverGeneral: PromotePiece := PromotedSilverGeneral;
-    Bishop: PromotePiece := DragonHorse;
-    Rook: PromotePiece := DragonKing;
-    else PromotePiece := Piece;
-  end;
-end;
-
-function UnpromotePiece(Piece: TPiece): TPiece;
-begin
-  case Piece of
-    PromotedPawn: UnpromotePiece := Pawn;
-    PromotedLance: UnpromotePiece := Lance;
-    PromotedKnight: UnpromotePiece := Knight;
-    PromotedSilverGeneral: UnpromotePiece := SilverGeneral;
-    DragonHorse: UnpromotePiece := Bishop;
-    DragonKing: UnpromotePiece := Rook;
-    else UnpromotePiece := Piece;
-  end;
-end;
-
-procedure DisplayBoard(var Board: TBoard; var CurrentPlayer: TPlayer);
+procedure DisplayBoard(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  var CapturedPieces: TCapturedPieces);
 var
   Row, Col, BoardLeft, BoardTop: integer;
   Symbol: char;
+  Piece: TPiece;
 begin
   ClrScr;
-
   BoardLeft := 21;
   BoardTop := 1;
-
   GotoXY(BoardLeft + 16, BoardTop);
   Write('SHOGI');
 
@@ -684,16 +146,29 @@ begin
     Write('+---+---+---+---+---+---+---+---+---+');
   end;
 
+  GotoXY(1, BoardTop + 2);
+  Write('Sente hand:');
+  GotoXY(1, BoardTop + 3);
+  for Piece := Pawn to King do
+    if Piece in [Pawn, Lance, Knight, SilverGeneral, GoldGeneral, Bishop, Rook] then
+      if CapturedPieces[Sente, Piece] > 0 then
+        Write(PieceToChar(Piece, Sente), '=', CapturedPieces[Sente, Piece], ' ');
+
+  GotoXY(64, BoardTop + 2);
+  Write('Gote hand:');
+  GotoXY(64, BoardTop + 3);
+  for Piece := Pawn to King do
+    if Piece in [Pawn, Lance, Knight, SilverGeneral, GoldGeneral, Bishop, Rook] then
+      if CapturedPieces[Gote, Piece] > 0 then
+        Write(PieceToChar(Piece, Gote), '=', CapturedPieces[Gote, Piece], ' ');
+
+  GotoXY(1, BoardTop + 21);
   if CurrentPlayer = Sente then
-      begin
-        Writeln;
-        Writeln('Sente''s turn.');
-      end
-    else
-      begin
-        Writeln;
-        Writeln('Gote''s turn.');
-      end;
+    Writeln('Sente''s turn.')
+  else
+    Writeln('Gote''s turn.');
+
+  GotoXY(1, BoardTop + 22);
 end;
 
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
@@ -710,8 +185,7 @@ procedure MakeMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
   Promote: boolean;
-  var CapturedPieces: TCapturedPieces
-);
+  var CapturedPieces: TCapturedPieces);
 var
   MovingPiece, CapturedPiece: TPiece;
   MovingPlayer: TPlayer;
@@ -732,9 +206,21 @@ begin
 
   Board[ToCol, ToRow].Piece := MovingPiece;
   Board[ToCol, ToRow].Owner := MovingPlayer;
-
   Board[FromCol, FromRow].Piece := None;
   Board[FromCol, FromRow].Owner := NoPlayer;
+end;
+
+procedure MakeDrop(
+  var Board: TBoard;
+  Col, Row: integer;
+  Piece: TPiece;
+  var CapturedPieces: TCapturedPieces;
+  CurrentPlayer: TPlayer);
+begin
+  Board[Col, Row].Piece := Piece;
+  Board[Col, Row].Owner := CurrentPlayer;
+  CapturedPieces[CurrentPlayer, Piece] :=
+    CapturedPieces[CurrentPlayer, Piece] - 1;
 end;
 
 procedure PlayGame(
@@ -745,6 +231,9 @@ procedure PlayGame(
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   MoveComplete, PromotionChoice, InputValid: boolean;
+  DropRequested: boolean;
+  DropPiece: TPiece;
+  DropCol, DropRow: integer;
   Input: string;
 begin
   repeat
@@ -752,7 +241,7 @@ begin
     
     repeat
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
       
       InputValid := True;
 
@@ -770,6 +259,52 @@ begin
         Exit;
       end;
 
+      DropRequested := Input = 'D';
+
+      if DropRequested then
+      begin
+        Write('Piece to drop (P/L/N/S/G/B/R): ');
+        Input := UpperString(GetStringInput);
+        if Length(Input) <> 1 then
+          InputValid := False
+        else
+          DropPiece := CharToPiece(Input[1]);
+
+        if InputValid and
+           ((DropPiece = None) or
+            (CapturedPieces[CurrentPlayer, DropPiece] <= 0)) then
+          InputValid := False;
+
+        if not InputValid then
+        begin
+          HandleError(1);
+          PauseForUser;
+        end
+        else
+        begin
+          Write('To where? (e.g. 9 8): ');
+          DropCol := 10 - GetIntegerInput;
+          DropRow := GetIntegerInput;
+
+          if IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
+             not ((DropPiece = Pawn) and
+                  IsPawnDropMate(
+                    Board, DropCol, DropRow, CurrentPlayer, CapturedPieces)) then
+          begin
+            MakeDrop(Board, DropCol, DropRow, DropPiece,
+              CapturedPieces, CurrentPlayer);
+            MoveComplete := True;
+          end
+          else
+          begin
+            HandleError(1);
+            PauseForUser;
+          end;
+        end;
+      end;
+
+      if (not DropRequested) and (not MoveComplete) then
+      begin
       (* This gives the user on either side an option to resign or end the game without being trapped in the game *)
       (* Otherwise, input gets shoved into the coordinate parsing *)
       FromCol := 10 - StrToIntDef(Input, 0);
@@ -790,7 +325,7 @@ begin
       if InputValid then
       begin
         ClrScr;
-        DisplayBoard(Board, CurrentPlayer);
+        DisplayBoard(Board, CurrentPlayer, CapturedPieces);
 
         Write('To where? (e.g. 9 8): ');
         ToCol := 10 - GetIntegerInput;
@@ -811,13 +346,14 @@ begin
       (* Only process move if all coordinates were valid *)
       if InputValid then
       begin
-        if IsValidMove(
+        if IsLegalMove(
           Board,
           FromCol,
           FromRow,
           ToCol,
           ToRow,
-          CurrentPlayer
+          CurrentPlayer,
+          False
         ) then
         begin
           PromotionChoice := False;
@@ -873,10 +409,23 @@ begin
           PauseForUser;
         end;
       end;
+      end;
 
     until MoveComplete;
 
     SwitchPlayer(CurrentPlayer);
+
+    if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+    begin
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      if CurrentPlayer = Sente then
+        Writeln('Checkmate. Gote wins.')
+      else
+        Writeln('Checkmate. Sente wins.');
+      PauseForUser;
+      Exit;
+    end;
 
     if DifficultyLevel > 0 then
       Exit;
@@ -892,13 +441,21 @@ begin
     CurrentPlayer := Sente;
 end;
 
-procedure SaveGame(var Board: TBoard; FileName: string);
+procedure SaveGame(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  var CapturedPieces: TCapturedPieces;
+  FileName: string);
 var
   FileHandle: Text;
   Row, Col: integer;
+  Player: TPlayer;
+  Piece: TPiece;
 begin
   Assign(FileHandle, FileName);
   Rewrite(FileHandle);
+
+  Writeln(FileHandle, Ord(CurrentPlayer));
 
   for Row := 1 to 9 do
     for Col := 1 to 9 do
@@ -911,16 +468,29 @@ begin
       );
     end;
 
+  for Player := NoPlayer to Gote do
+    for Piece := None to King do
+      Writeln(FileHandle, CapturedPieces[Player, Piece]);
+
   Close(FileHandle);
 end;
 
-procedure LoadGame(var Board: TBoard; FileName: string);
+procedure LoadGame(
+  var Board: TBoard;
+  var CurrentPlayer: TPlayer;
+  var CapturedPieces: TCapturedPieces;
+  FileName: string);
 var
   FileHandle: Text;
   PieceNum, OwnerNum, Row, Col: integer;
+  Player: TPlayer;
+  Piece: TPiece;
 begin
   Assign(FileHandle, FileName);
   Reset(FileHandle);
+
+  Readln(FileHandle, PieceNum);
+  CurrentPlayer := TPlayer(PieceNum);
 
   for Row := 1 to 9 do
     for Col := 1 to 9 do
@@ -929,6 +499,10 @@ begin
       Board[Col, Row].Piece := TPiece(PieceNum);
       Board[Col, Row].Owner := TPlayer(OwnerNum);
     end;
+
+  for Player := NoPlayer to Gote do
+    for Piece := None to King do
+      Readln(FileHandle, CapturedPieces[Player, Piece]);
 
   Close(FileHandle);
 end;
