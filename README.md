@@ -53,7 +53,7 @@ Ensure you have the following installed:
    cd src
    ```
 
-2. Copy all files from this directory to your floppy disk.
+2. Copy all files from the directory of your choice to your floppy disk.
 
 Example:
 
@@ -68,6 +68,7 @@ cp * /path/to/floppy/disk/
 - `shogi_game.pas`: Contains core logic and rules for the Shogi game.
 - `ui_main.pas`: Handles user interface, including menus and gameplay options.
 - `ai_opponent.pas`: Contains logic for computer generated opponent for single player game.
+- `util.pas`: Contains all general functions and procedures in order to run the game.
 
 ## Usage
 
@@ -96,6 +97,8 @@ When testing on actual Amstrad system, a recommended combination of MS-DOS and T
    ```sh
    a:\tpc main.pas
    ```
+
+   - Amstrad terminal
 
    ```sh
    tpc main.pas
