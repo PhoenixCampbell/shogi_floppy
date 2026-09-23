@@ -7,6 +7,7 @@ uses shogigam, aiopp, util, crt;
 procedure MainMenu;
 procedure SinglePlayerGame;
 procedure PlayerVsPlayer;
+procedure ResumeGame;
 procedure DisplayRules;
 
 implementation
@@ -18,12 +19,13 @@ begin
   repeat
     ClrScr;
 
-    CenterText('Shogi Game - Main Menu  0.15.1');
+    CenterText('Shogi Game - Main Menu  1.4.7');
 
     WriteLine('1. Single Player vs AI', 2);
     WriteLine('2. Player vs Player', 4);
-    WriteLine('3. Display Rules', 6);
-    WriteLine('4. Exit', 8);
+    WriteLine('3. Load saved game', 6);
+    WriteLine('4. Display Rules', 8);
+    WriteLine('5. Exit', 10);
 
     GotoXY(1, 22);
     Write('Select option: ');
@@ -33,8 +35,9 @@ begin
     case UserChoice of
       1: SinglePlayerGame;
       2: PlayerVsPlayer;
-      3: DisplayRules;
-      4: Halt;
+      3: ResumeGame;
+      4: DisplayRules;
+      5: Halt;
     end;
 
   until False;
@@ -123,6 +126,66 @@ begin
   CurrentPlayer := Sente;
 
   PlayGame(Board, CurrentPlayer, 0, CapturedPieces);
+end;
+
+procedure ResumeGame;
+var
+  Board: TBoard;
+  CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
+  CapturedPieces: TCapturedPieces;
+begin
+  if not LoadGame(
+    Board,
+    CurrentPlayer,
+    DifficultyLevel,
+    CapturedPieces,
+    'shogi.sav'
+  ) then
+  begin
+    HandleError(5);
+    PauseForUser;
+    Exit;
+  end;
+
+  HandleError(4);
+  PauseForUser;
+
+  if DifficultyLevel = 0 then
+  begin
+    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
+    Exit;
+  end;
+
+  repeat
+    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
+
+    if CurrentPlayer <> Gote then
+      Exit;
+
+    if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+      Exit;
+
+    ClrScr;
+    DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+    Writeln;
+    Writeln('Computer is moving...');
+
+    PlayAI(Board, DifficultyLevel, CapturedPieces);
+    SwitchPlayer(CurrentPlayer);
+
+    if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+    begin
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      if CurrentPlayer = Sente then
+        Writeln('Checkmate. Gote wins.')
+      else
+        Writeln('Checkmate. Sente wins.');
+      PauseForUser;
+      Exit;
+    end;
+  until False;
 end;
 
 procedure DisplayMovementRule(PieceName: string);
@@ -298,18 +361,42 @@ begin
   Writeln('Drop Pieces:');
   Writeln('  - Press ''D'' to drop a piece');
   Writeln('  - Type its letter: P, L, N, S, G, B, or R');
-  Writeln('  - Enter the destination column, then row');
+  Writeln('  - Press ''ENTER'' to confirm the drop');
+  Writeln('  - Key Points: Pawns cannot be dropped in a column that already has one');
+  Writeln('  - Additionally, you cannot drop a pawn to give an immediate checkmate');
+  Writeln('  - Lastly, you cannot drop a pawn or a lance on the last row, or a knight on');
+  Writeln('  - the last two rows as they would have no legal moves after being dropped');
   Writeln;
   Writeln('Escape Game:');
-  Writeln('  - Typing ''resign'', ''end'', ''quit'', or ''exit'' at the beginning on');
-  Writeln('  your turn will end the game');
+  Writeln('  - Typing ''R'', ''E'', ''Q'', or ''X'' at the beginning of your turn will'); 
+  Writeln('  - end the game');
   Writeln;
   Writeln('General Controls:');
-  Writeln('  - Enter Column / Row to select a square, pressing ''ENTER'' ');
-  Writeln('  -  between each input (e.g., ''9'' ENTER then ''5'' ENTER)');
+  Writeln('  - Using the arrow keys to navigate, choose a starting square then select by'); 
+  Writeln('  - pressing ''ENTER'' ');
+  Writeln('  - then, choose a landing square, selecting it by pressing ''ENTER'' again');
   Writeln;
 
   PauseForUser;
-end;
+  ClrScr;
 
+  CenterText('Shogi Game - Saving and Loading');
+  Writeln;
+  Writeln('When you can not finish a game, you can save it and load it later.');
+  Writeln('  - To save a game, type ''S'' at the beginning of your turn.');
+  Writeln('  - To load a game, select the "Load saved game" option from the main menu.');
+  Writeln('  - The game will be saved to a file named "shogi.sav" in the current directory.');
+  Writeln;
+
+  PauseForUser;
+  (* Honestly, Thank you for being interested in playing my game. This took some time and effort *)
+  (* Debugging, testing, rewriting, wondering why something was broken, and quite a few late nights *)
+  (* If you're reading this, it also means you wanted to see whats under the hood or even help coding *)
+  (* And I thank you for that. *)
+  (* If you would want to play shogi with me sometime, my handle on 81Dojo and lishogi is Phoenix_Campbell *)
+  (* I participate in the weekly Shogi Ladder on 81Dojo when I can and would love to continue to play against *)
+  (* Others who were serious enough to find this message *)
+  (* Otherwise, if you wanted any help in this code base, email me or visit my website where my contact information *)
+  (* Is at phoenixcampbell.com Again, Thank you very much *)
+end;
 end.

@@ -17,7 +17,6 @@ type
   TCapturedPieces = array[TPlayer, TPiece] of integer;
 function GetStringInput: string;
 function GetIntegerInput: integer;
-function StrToIntDef(S : string; Default : integer) : integer;
 function InRange(Value, Min, Max: integer): Boolean;
 function UpperString(S: string): string;
 function PieceToChar(Piece: TPiece; Owner: TPlayer): char;
@@ -83,19 +82,6 @@ begin
   until ErrorCode = 0;
 
   GetIntegerInput := Value;
-end;
-
-(* StrToIntDef does not exist apparently in turbo pascal 4.0 *)
-function StrToIntDef(S : string; Default : integer) : integer;
-var
-  ResultValue, ErrorCode   : integer;
-begin
-  Val(S, ResultValue, ErrorCode);
-  
-  if ErrorCode = 0 then
-    StrToIntDef := ResultValue
-  else
-    StrToIntDef := Default;
 end;
 
 function InRange(Value, Min, Max: integer): Boolean;

@@ -152,16 +152,11 @@ There are a few things to work on in order to make this a fully usable game. I h
 - Add a picture or ASCII Shogi piece above main menu for visual appeal
   - Addition of Japanese kanji requires hardware / graphical additions to work on old hardware, which take a longer time
   - bitmap additions to allow for picture graphs for rules displaying movement
-- Use arrow keys to determine coordinate location while playing instead of maunual entry
-  - using previous entry from player as default during game. 5,5 as default
-  - would look wierd to default back each time to center board
 
 ### Gameplay Improvements
 
-- checkmate logic during move, after entered TO/FROM
-  - to check after completing full game
-- Save and load games so that the player can pickup a game from the past onto the disk
-  - idea is while players are traveling, they can save their game while moving and pick it back up when they have the time
+- Add an optional timer so that the game has more stakes to it
+  - selectable as different standard shogi times or no timer before entering a 2-player game or after choosing AI difficulty
 
 ---
 

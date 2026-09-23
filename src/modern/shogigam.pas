@@ -30,16 +30,18 @@ procedure PlayGame(
   DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
-procedure SaveGame(
+function SaveGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
-procedure LoadGame(
+  FileName: string): boolean;
+function LoadGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  var DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
+  FileName: string): boolean;
 
 implementation
 
@@ -230,12 +232,59 @@ procedure PlayGame(
   var CapturedPieces: TCapturedPieces);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
+  CursorCol, CursorRow: integer;
   MoveComplete, PromotionChoice, InputValid: boolean;
   DropRequested: boolean;
   DropPiece: TPiece;
   DropCol, DropRow: integer;
   Input: string;
+  function SelectSquare(var Col, Row: integer; Prompt: string): char;
+  var
+    Key: char;
+    OldAttr: byte;
+  begin
+    repeat
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      GotoXY(22 + ((9 - Col) * 4), 4 + ((Row - 1) * 2));
+      OldAttr := TextAttr;
+      TextAttr := $70;
+      Write(' ', PieceToChar(Board[10 - Col, Row].Piece,
+        Board[10 - Col, Row].Owner));
+      Write(' ');
+      TextAttr := OldAttr;
+      GotoXY(1, 24);
+      Write(Prompt, ' ', Col, ',', Row,
+        '  ENTER to select  ');
+
+      Key := ReadKey;
+      if Key = #0 then
+      begin
+        Key := ReadKey;
+        case Ord(Key) of
+          72: if Row > 1 then Row := Row - 1;
+          80: if Row < 9 then Row := Row + 1;
+          75: if Col < 9 then Col := Col + 1;
+          77: if Col > 1 then Col := Col - 1;
+        end;
+      end
+      else if Key = #13 then
+        SelectSquare := #0
+      else
+      begin
+        Key := UpCase(Key);
+        if (Key = 'D') or (Key = 'S') or (Key = 'R') or (Key = 'E') or
+           (Key = 'Q') or (Key = 'X') then
+        begin
+          SelectSquare := Key;
+          Exit;
+        end;
+      end;
+    until Key = #13;
+  end;
 begin
+  CursorCol := 5;
+  CursorRow := 5;
   repeat
     MoveComplete := False;
     
@@ -246,17 +295,23 @@ begin
       InputValid := True;
 
       (* Get From coordinates *)
-      Write('From where? (e.g. 9 9): ');
+      Input := SelectSquare(CursorCol, CursorRow, 'From where?');
 
-      Input := GetStringInput; (* Read input as string *)
-      Input := UpperString(Input);
-      
-      if (Input = 'RESIGN') or
-          (Input = 'END') or
-          (Input = 'QUIT') or
-          (Input = 'EXIT') then
+      if (Input = 'R') or (Input = 'E') or
+          (Input = 'Q') or (Input = 'X') then
       begin
         Exit;
+      end;
+
+      if Input = 'S' then
+      begin
+        if SaveGame(Board, CurrentPlayer, DifficultyLevel,
+                    CapturedPieces, 'shogi.sav') then
+          HandleError(2)
+        else
+          HandleError(3);
+        PauseForUser;
+        InputValid := False;
       end;
 
       DropRequested := Input = 'D';
@@ -282,11 +337,18 @@ begin
         end
         else
         begin
-          Write('To where? (e.g. 9 8): ');
-          DropCol := 10 - GetIntegerInput;
-          DropRow := GetIntegerInput;
+          Input := SelectSquare(CursorCol, CursorRow, 'To where?');
+          if Input <> #0 then
+          begin
+            HandleError(1);
+            PauseForUser;
+            InputValid := False;
+          end;
+          DropCol := 10 - CursorCol;
+          DropRow := CursorRow;
 
-          if IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
+          if InputValid and
+             IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
              not ((DropPiece = Pawn) and
                   IsPawnDropMate(
                     Board, DropCol, DropRow, CurrentPlayer, CapturedPieces)) then
@@ -303,12 +365,10 @@ begin
         end;
       end;
 
-      if (not DropRequested) and (not MoveComplete) then
+      if (Input <> 'S') and (not DropRequested) and (not MoveComplete) then
       begin
-      (* This gives the user on either side an option to resign or end the game without being trapped in the game *)
-      (* Otherwise, input gets shoved into the coordinate parsing *)
-      FromCol := 10 - StrToIntDef(Input, 0);
-      FromRow := GetIntegerInput;
+      FromCol := 10 - CursorCol;
+      FromRow := CursorRow;
       
       (* Validate From coordinates *)
       if not (InRange(FromCol, 1, 9) and
@@ -327,9 +387,16 @@ begin
         ClrScr;
         DisplayBoard(Board, CurrentPlayer, CapturedPieces);
 
-        Write('To where? (e.g. 9 8): ');
-        ToCol := 10 - GetIntegerInput;
-        ToRow := GetIntegerInput;
+        Input := SelectSquare(CursorCol, CursorRow, 'To where?');
+        ToCol := 10 - CursorCol;
+        ToRow := CursorRow;
+
+        if Input <> #0 then
+        begin
+          HandleError(1);
+          PauseForUser;
+          InputValid := False;
+        end;
 
         (* Validate To coordinates *)
         if not (InRange(ToCol, 1, 9) and
@@ -441,21 +508,30 @@ begin
     CurrentPlayer := Sente;
 end;
 
-procedure SaveGame(
+function SaveGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
+  FileName: string): boolean;
 var
   FileHandle: Text;
   Row, Col: integer;
   Player: TPlayer;
   Piece: TPiece;
+  ErrorCode: integer;
 begin
+  SaveGame := False;
   Assign(FileHandle, FileName);
+  {$I-}
   Rewrite(FileHandle);
+  ErrorCode := IOResult;
+  {$I+}
+  if ErrorCode <> 0 then
+    Exit;
 
   Writeln(FileHandle, Ord(CurrentPlayer));
+  Writeln(FileHandle, DifficultyLevel);
 
   for Row := 1 to 9 do
     for Col := 1 to 9 do
@@ -473,24 +549,34 @@ begin
       Writeln(FileHandle, CapturedPieces[Player, Piece]);
 
   Close(FileHandle);
+  SaveGame := True;
 end;
 
-procedure LoadGame(
+function LoadGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  var DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
+  FileName: string): boolean;
 var
   FileHandle: Text;
   PieceNum, OwnerNum, Row, Col: integer;
   Player: TPlayer;
   Piece: TPiece;
+  ErrorCode: integer;
 begin
+  LoadGame := False;
   Assign(FileHandle, FileName);
+  {$I-}
   Reset(FileHandle);
+  ErrorCode := IOResult;
+  {$I+}
+  if ErrorCode <> 0 then
+    Exit;
 
   Readln(FileHandle, PieceNum);
   CurrentPlayer := TPlayer(PieceNum);
+  Readln(FileHandle, DifficultyLevel);
 
   for Row := 1 to 9 do
     for Col := 1 to 9 do
@@ -505,5 +591,6 @@ begin
       Readln(FileHandle, CapturedPieces[Player, Piece]);
 
   Close(FileHandle);
+  LoadGame := True;
 end;
 end.
