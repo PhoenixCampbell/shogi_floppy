@@ -6,5 +6,6 @@
 *.dsk
 *.log
 *.tmp
+*.sav
 build/
 dist/
