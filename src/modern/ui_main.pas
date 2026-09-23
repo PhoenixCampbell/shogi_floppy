@@ -19,7 +19,7 @@ begin
   repeat
     ClrScr;
 
-    CenterText('Shogi Game - Main Menu  1.4.7');
+    CenterText('Shogi Game - Main Menu  1.5.9');
 
     WriteLine('1. Single Player vs AI', 2);
     WriteLine('2. Player vs Player', 4);
