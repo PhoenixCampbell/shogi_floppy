@@ -268,7 +268,7 @@ var
       Write(' ');
       TextAttr := OldAttr;
       GotoXY(1, 24);
-      Write(Prompt, ' ', Col, ',', Row,
+      Write(Prompt, ' ', Col, ', ', Row,
         '  ENTER to select  ');
 
       Key := ReadKey;
