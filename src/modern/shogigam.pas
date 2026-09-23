@@ -13,6 +13,7 @@ procedure DisplayBoard(
   var CurrentPlayer: TPlayer;
   var CapturedPieces: TCapturedPieces);
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
+procedure SetLastMove(FromCol, FromRow: integer);
 procedure MakeMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
@@ -44,6 +45,9 @@ function LoadGame(
   FileName: string): boolean;
 
 implementation
+
+var
+  LastMoveCol, LastMoveRow: integer;
 
 
 procedure SetupBoard(var Board: TBoard);
@@ -108,6 +112,8 @@ begin
   for Col := 1 to 9 do
     Board[Col,9].Owner := Sente;
 
+  SetLastMove(0, 0);
+
 end;
 
 procedure DisplayBoard(
@@ -139,6 +145,8 @@ begin
     for Col := 1 to 9 do
     begin
       Symbol := PieceToChar(Board[Col, Row].Piece, Board[Col, Row].Owner);
+      if (Col = LastMoveCol) and (Row = LastMoveRow) then
+        Symbol := '#';
       Write(' ', Symbol, ' |');
     end;
 
@@ -171,6 +179,12 @@ begin
     Writeln('Gote''s turn.');
 
   GotoXY(1, BoardTop + 22);
+end;
+
+procedure SetLastMove(FromCol, FromRow: integer);
+begin
+  LastMoveCol := FromCol;
+  LastMoveRow := FromRow;
 end;
 
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
@@ -479,6 +493,7 @@ begin
             PromotionChoice,
             CapturedPieces
           );
+          SetLastMove(FromCol, FromRow);
 
           MoveComplete := True;
         end
@@ -603,6 +618,7 @@ begin
       Readln(FileHandle, CapturedPieces[Player, Piece]);
 
   Close(FileHandle);
+  SetLastMove(0, 0);
   LoadGame := True;
 end;
 end.

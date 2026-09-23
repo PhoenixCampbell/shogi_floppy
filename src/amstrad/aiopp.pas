@@ -317,6 +317,10 @@ begin
   end;
 
   ApplyMove(Board, Moves[BestIndex], AIPlayer, CapturedPieces);
+  if Moves[BestIndex].IsDrop then
+    SetLastMove(0, 0)
+  else
+    SetLastMove(Moves[BestIndex].FromCol, Moves[BestIndex].FromRow);
 end;
 
 function KingSafetyScore(var Board: TBoard; Player: TPlayer): integer;
@@ -565,6 +569,10 @@ procedure PlaySelectedMove(
   var CapturedPieces: TCapturedPieces);
 begin
   ApplyMove(Board, Move, Player, CapturedPieces);
+  if Move.IsDrop then
+    SetLastMove(0, 0)
+  else
+    SetLastMove(Move.FromCol, Move.FromRow);
 end;
 
 procedure RandomMove(
