@@ -31,6 +31,11 @@ function IsValidDrop(
   Piece: TPiece;
   Col, Row: integer;
   CurrentPlayer: TPlayer): boolean;
+function IsLegalDrop(
+  var Board: TBoard;
+  Piece: TPiece;
+  Col, Row: integer;
+  CurrentPlayer: TPlayer): boolean;
 function IsSquareAttacked(
   var Board: TBoard;
   Col, Row: integer;
@@ -322,6 +327,25 @@ begin
         Exit;
 
   IsValidDrop := True;
+end;
+
+function IsLegalDrop(
+  var Board: TBoard;
+  Piece: TPiece;
+  Col, Row: integer;
+  CurrentPlayer: TPlayer): boolean;
+var
+  SimulatedBoard: TBoard;
+begin
+  IsLegalDrop := False;
+
+  if not IsValidDrop(Board, Piece, Col, Row, CurrentPlayer) then
+    Exit;
+
+  SimulatedBoard := Board;
+  SimulatedBoard[Col, Row].Piece := Piece;
+  SimulatedBoard[Col, Row].Owner := CurrentPlayer;
+  IsLegalDrop := not IsInCheck(SimulatedBoard, CurrentPlayer);
 end;
 
 function IsPseudoLegalMove(
