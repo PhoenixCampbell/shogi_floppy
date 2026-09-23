@@ -283,6 +283,18 @@ var
     until Key = #13;
   end;
 begin
+  if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+  begin
+    ClrScr;
+    DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+    if CurrentPlayer = Sente then
+      Writeln('Checkmate. Gote wins.')
+    else
+      Writeln('Checkmate. Sente wins.');
+    PauseForUser;
+    Exit;
+  end;
+
   CursorCol := 5;
   CursorRow := 5;
   repeat
@@ -347,8 +359,8 @@ begin
           DropCol := 10 - CursorCol;
           DropRow := CursorRow;
 
-          if InputValid and
-             IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
+           if InputValid and
+             IsLegalDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
              not ((DropPiece = Pawn) and
                   IsPawnDropMate(
                     Board, DropCol, DropRow, CurrentPlayer, CapturedPieces)) then

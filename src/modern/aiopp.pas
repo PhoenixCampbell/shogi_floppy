@@ -103,7 +103,8 @@ begin
         for ToCol := 1 to 9 do
           if IsValidDrop(Board, Piece, ToCol, ToRow, Player) and
              not IsPawnDropMate(
-               Board, ToCol, ToRow, Player, CapturedPieces) then
+               Board, ToCol, ToRow, Player, CapturedPieces) and
+             IsLegalDrop(Board, Piece, ToCol, ToRow, Player) then
             AddMove(
               Moves, MoveCount, 0, 0, ToCol, ToRow, Piece, True, False);
 end;
