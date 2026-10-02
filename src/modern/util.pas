@@ -15,6 +15,11 @@ type
   end;
   TBoard = array[1..9, 1..9] of TSquare;
   TCapturedPieces = array[TPlayer, TPiece] of integer;
+  TGameClock = record
+    Enabled: boolean;
+    RemainingMs: array[TPlayer] of LongInt;
+    LastTick: LongInt;
+  end;
 function GetStringInput: string;
 function GetIntegerInput: integer;
 function InRange(Value, Min, Max: integer): Boolean;
