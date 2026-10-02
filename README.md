@@ -5,7 +5,7 @@
 
 ## Overview
 
-This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC. It should also work for any other system that can run Pascal but was specifically sized and filed to run on a 3.5" 720kB DD Floppy Disk. The game includes single-player mode against five different levels of AI opponents and two-player local multiplayer mode. Additionally, it supports saving and loading games to disk.
+This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC. It should also work for any other system that can run Pascal but was specifically sized and filed to run on a 3.5" 720kB DD Floppy Disk. The game includes single-player mode against five different levels of AI opponents and two-player local multiplayer mode. Both modes offer optional 10-, 30-, or 60-minute clocks, and games can be saved and loaded to disk.
 
 ## File Sizes From 1.0.0 release
 
@@ -154,9 +154,6 @@ There are a few things to work on in order to make this a fully usable game. I h
   - bitmap additions to allow for picture graphs for rules displaying movement
 
 ### Gameplay Improvements
-
-- Add an optional timer so that the game has more stakes to it
-  - selectable as different standard shogi times or no timer before entering a 2-player game or after choosing AI difficulty
 
 ---
 
