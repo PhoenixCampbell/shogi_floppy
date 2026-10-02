@@ -12,6 +12,35 @@ procedure DisplayRules;
 
 implementation
 
+procedure SelectTimeControl(var Clock: TGameClock);
+var
+  Choice: integer;
+  Minutes: integer;
+begin
+  ClrScr;
+  CenterText('Select time control:');
+  Writeln;
+  Writeln('0. No timer');
+  Writeln('1. 10 minutes');
+  Writeln('2. 30 minutes');
+  Writeln('3. 60 minutes');
+  repeat
+    GotoXY(1, 22);
+    Write('Time control: ');
+    Choice := GetIntegerInput;
+    if (Choice < 0) or (Choice > 3) then
+      Writeln('Please enter a number from 0 to 3.');
+  until (Choice >= 0) and (Choice <= 3);
+
+  case Choice of
+    1: Minutes := 10;
+    2: Minutes := 30;
+    3: Minutes := 60;
+    else Minutes := 0;
+  end;
+  InitializeClock(Clock, Minutes);
+end;
+
 procedure MainMenu;
 var
   UserChoice: integer;
@@ -49,6 +78,7 @@ var
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
   CapturedPieces: TCapturedPieces;
+  Clock: TGameClock;
 begin
   SetupBoard(Board);
   ClearCapturedPieces(CapturedPieces);
@@ -75,12 +105,14 @@ begin
 
   until (DifficultyLevel >= 1) and (DifficultyLevel <= 5);
 
+  SelectTimeControl(Clock);
+
   (* Writeln('Single Player  Difficulty: ', DifficultyLevel); *)
   CurrentPlayer := Sente;
   Writeln('Sente moves first.');
 
   repeat
-    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
+    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces, Clock);
 
     if CurrentPlayer <> Gote then
       Exit;
@@ -91,18 +123,27 @@ begin
         Exit;
 
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       Writeln;
       Writeln('Computer is moving...');
 
+      BeginClockTurn(Clock);
       PlayAI(Board, DifficultyLevel, CapturedPieces);
+      UpdateClock(Clock, CurrentPlayer);
+      if Clock.Enabled and (Clock.RemainingMs[CurrentPlayer] = 0) then
+      begin
+        ClrScr;
+        Writeln('Time expired. Sente wins.');
+        PauseForUser;
+        Exit;
+      end;
 
       SwitchPlayer(CurrentPlayer);
 
       if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
       begin
         ClrScr;
-        DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+        DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
         if CurrentPlayer = Sente then
           Writeln('Checkmate. Gote wins.')
         else
@@ -120,12 +161,14 @@ var
   Board: TBoard;
   CurrentPlayer: TPlayer;
   CapturedPieces: TCapturedPieces;
+  Clock: TGameClock;
 begin
+  SelectTimeControl(Clock);
   SetupBoard(Board);
   ClearCapturedPieces(CapturedPieces);
   CurrentPlayer := Sente;
 
-  PlayGame(Board, CurrentPlayer, 0, CapturedPieces);
+  PlayGame(Board, CurrentPlayer, 0, CapturedPieces, Clock);
 end;
 
 procedure ResumeGame;
@@ -134,12 +177,14 @@ var
   CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
   CapturedPieces: TCapturedPieces;
+  Clock: TGameClock;
 begin
   if not LoadGame(
     Board,
     CurrentPlayer,
     DifficultyLevel,
     CapturedPieces,
+    Clock,
     'shogi.sav'
   ) then
   begin
@@ -153,12 +198,12 @@ begin
 
   if DifficultyLevel = 0 then
   begin
-    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
+    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces, Clock);
     Exit;
   end;
 
   repeat
-    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces);
+    PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces, Clock);
 
     if CurrentPlayer <> Gote then
       Exit;
@@ -167,17 +212,26 @@ begin
       Exit;
 
     ClrScr;
-    DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+    DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
     Writeln;
     Writeln('Computer is moving...');
 
+    BeginClockTurn(Clock);
     PlayAI(Board, DifficultyLevel, CapturedPieces);
+    UpdateClock(Clock, CurrentPlayer);
+    if Clock.Enabled and (Clock.RemainingMs[CurrentPlayer] = 0) then
+    begin
+      ClrScr;
+      Writeln('Time expired. Sente wins.');
+      PauseForUser;
+      Exit;
+    end;
     SwitchPlayer(CurrentPlayer);
 
     if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
     begin
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       if CurrentPlayer = Sente then
         Writeln('Checkmate. Gote wins.')
       else
