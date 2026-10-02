@@ -2,7 +2,7 @@ unit shogigam;
 
 interface
 
-uses util, crt;
+uses util, crt, dos;
 
 const PieceValue: array[TPiece] of integer =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
@@ -11,7 +11,8 @@ procedure SetupBoard(var Board: TBoard);
 procedure DisplayBoard(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
 procedure SetLastMove(FromCol, FromRow: integer);
 procedure MakeMove(
@@ -29,19 +30,25 @@ procedure PlayGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
+procedure InitializeClock(var Clock: TGameClock; Minutes: integer);
+procedure BeginClockTurn(var Clock: TGameClock);
+procedure UpdateClock(var Clock: TGameClock; CurrentPlayer: TPlayer);
 function SaveGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock;
   FileName: string): boolean;
 function LoadGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   var DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock;
   FileName: string): boolean;
 
 implementation
@@ -119,7 +126,8 @@ end;
 procedure DisplayBoard(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 var
   Row, Col, BoardLeft, BoardTop: integer;
   Symbol: char;
@@ -179,6 +187,59 @@ begin
     Writeln('Gote''s turn.');
 
   GotoXY(1, BoardTop + 22);
+  if Clock.Enabled then
+    Write('Sente ', Clock.RemainingMs[Sente] div 60000:2, ':',
+      (Clock.RemainingMs[Sente] div 1000) mod 60:2, '  Gote ',
+      Clock.RemainingMs[Gote] div 60000:2, ':',
+      (Clock.RemainingMs[Gote] div 1000) mod 60:2)
+  else
+    Write('No timer');
+
+  GotoXY(1, BoardTop + 23);
+end;
+
+procedure InitializeClock(var Clock: TGameClock; Minutes: integer);
+var
+  Hour, Minute, Second, Hundredth: Word;
+begin
+  Clock.Enabled := Minutes > 0;
+  Clock.RemainingMs[Sente] := LongInt(Minutes) * 60000;
+  Clock.RemainingMs[Gote] := LongInt(Minutes) * 60000;
+  Clock.RemainingMs[NoPlayer] := 0;
+  GetTime(Hour, Minute, Second, Hundredth);
+  Clock.LastTick := ((LongInt(Hour) * 60 + Minute) * 60 + Second) *
+    100 + Hundredth;
+end;
+
+procedure BeginClockTurn(var Clock: TGameClock);
+var
+  Hour, Minute, Second, Hundredth: Word;
+begin
+  GetTime(Hour, Minute, Second, Hundredth);
+  Clock.LastTick := ((LongInt(Hour) * 60 + Minute) * 60 + Second) *
+    100 + Hundredth;
+end;
+
+procedure UpdateClock(var Clock: TGameClock; CurrentPlayer: TPlayer);
+var
+  Hour, Minute, Second, Hundredth: Word;
+  NowTick, Elapsed: LongInt;
+begin
+  GetTime(Hour, Minute, Second, Hundredth);
+  NowTick := ((LongInt(Hour) * 60 + Minute) * 60 + Second) *
+    100 + Hundredth;
+  if Clock.Enabled and (CurrentPlayer <> NoPlayer) then
+  begin
+    Elapsed := NowTick - Clock.LastTick;
+    if Elapsed < 0 then
+      Elapsed := Elapsed + 8640000;
+    if Elapsed * 10 >= Clock.RemainingMs[CurrentPlayer] then
+      Clock.RemainingMs[CurrentPlayer] := 0
+    else
+      Clock.RemainingMs[CurrentPlayer] :=
+        Clock.RemainingMs[CurrentPlayer] - Elapsed * 10;
+  end;
+  Clock.LastTick := NowTick;
 end;
 
 procedure SetLastMove(FromCol, FromRow: integer);
@@ -243,7 +304,8 @@ procedure PlayGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
   CursorCol, CursorRow: integer;
@@ -252,6 +314,7 @@ var
   DropPiece: TPiece;
   DropCol, DropRow: integer;
   Input: string;
+  KeyAvailable: boolean;
   function SelectSquare(var Col, Row: integer; Prompt: string): char;
   var
     Key: char;
@@ -259,7 +322,7 @@ var
   begin
     repeat
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       GotoXY(22 + ((9 - Col) * 4), 4 + ((Row - 1) * 2));
       OldAttr := TextAttr;
       TextAttr := $70;
@@ -271,7 +334,37 @@ var
       Write(Prompt, ' ', Col, ', ', Row,
         '  ENTER to select  ');
 
+      KeyAvailable := False;
+      while not KeyAvailable do
+      begin
+        if KeyPressed then
+          KeyAvailable := True
+        else
+        begin
+          Delay(100);
+          UpdateClock(Clock, CurrentPlayer);
+          if Clock.Enabled then
+          begin
+            GotoXY(1, 23);
+            Write('Sente ', Clock.RemainingMs[Sente] div 60000:2, ':',
+              (Clock.RemainingMs[Sente] div 1000) mod 60:2, '  Gote ',
+              Clock.RemainingMs[Gote] div 60000:2, ':',
+              (Clock.RemainingMs[Gote] div 1000) mod 60:2, '   ');
+            if Clock.RemainingMs[CurrentPlayer] = 0 then
+            begin
+              SelectSquare := #27;
+              Exit;
+            end;
+          end;
+        end;
+      end;
       Key := ReadKey;
+      UpdateClock(Clock, CurrentPlayer);
+      if Clock.Enabled and (Clock.RemainingMs[CurrentPlayer] = 0) then
+      begin
+        SelectSquare := #27;
+        Exit;
+      end;
       if Key = #0 then
       begin
         Key := ReadKey;
@@ -300,7 +393,7 @@ begin
   if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
   begin
     ClrScr;
-    DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+    DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
     if CurrentPlayer = Sente then
       Writeln('Checkmate. Gote wins.')
     else
@@ -311,17 +404,29 @@ begin
 
   CursorCol := 5;
   CursorRow := 5;
+  BeginClockTurn(Clock);
   repeat
     MoveComplete := False;
     
     repeat
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       
       InputValid := True;
 
       (* Get From coordinates *)
       Input := SelectSquare(CursorCol, CursorRow, 'From where?');
+
+      if Input = #27 then
+      begin
+        ClrScr;
+        if CurrentPlayer = Sente then
+          Writeln('Time expired. Gote wins.')
+        else
+          Writeln('Time expired. Sente wins.');
+        PauseForUser;
+        Exit;
+      end;
 
       if (Input = 'R') or (Input = 'E') or
           (Input = 'Q') or (Input = 'X') then
@@ -331,8 +436,9 @@ begin
 
       if Input = 'S' then
       begin
+        UpdateClock(Clock, CurrentPlayer);
         if SaveGame(Board, CurrentPlayer, DifficultyLevel,
-                    CapturedPieces, 'shogi.sav') then
+              CapturedPieces, Clock, 'shogi.sav') then
           HandleError(2)
         else
           HandleError(3);
@@ -346,6 +452,17 @@ begin
       begin
         Write('Piece to drop (P/L/N/S/G/B/R): ');
         Input := UpperString(GetStringInput);
+        UpdateClock(Clock, CurrentPlayer);
+        if Clock.Enabled and (Clock.RemainingMs[CurrentPlayer] = 0) then
+        begin
+          ClrScr;
+          if CurrentPlayer = Sente then
+            Writeln('Time expired. Gote wins.')
+          else
+            Writeln('Time expired. Sente wins.');
+          PauseForUser;
+          Exit;
+        end;
         if Length(Input) <> 1 then
           InputValid := False
         else
@@ -364,6 +481,16 @@ begin
         else
         begin
           Input := SelectSquare(CursorCol, CursorRow, 'To where?');
+          if Input = #27 then
+          begin
+            ClrScr;
+            if CurrentPlayer = Sente then
+              Writeln('Time expired. Gote wins.')
+            else
+              Writeln('Time expired. Sente wins.');
+            PauseForUser;
+            Exit;
+          end;
           if Input <> #0 then
           begin
             HandleError(1);
@@ -411,9 +538,19 @@ begin
       if InputValid then
       begin
         ClrScr;
-        DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+        DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
 
         Input := SelectSquare(CursorCol, CursorRow, 'To where?');
+        if Input = #27 then
+        begin
+          ClrScr;
+          if CurrentPlayer = Sente then
+            Writeln('Time expired. Gote wins.')
+          else
+            Writeln('Time expired. Sente wins.');
+          PauseForUser;
+          Exit;
+        end;
         ToCol := 10 - CursorCol;
         ToRow := CursorRow;
 
@@ -470,6 +607,18 @@ begin
             repeat
               Write('Promote piece? (Y/N): ');
               Input := GetStringInput;
+              UpdateClock(Clock, CurrentPlayer);
+              if Clock.Enabled and
+                 (Clock.RemainingMs[CurrentPlayer] = 0) then
+              begin
+                ClrScr;
+                if CurrentPlayer = Sente then
+                  Writeln('Time expired. Gote wins.')
+                else
+                  Writeln('Time expired. Sente wins.');
+                PauseForUser;
+                Exit;
+              end;
               Input := UpperString(Input);
 
               if (Input <> 'Y') and
@@ -508,11 +657,12 @@ begin
     until MoveComplete;
 
     SwitchPlayer(CurrentPlayer);
+    BeginClockTurn(Clock);
 
     if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
     begin
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       if CurrentPlayer = Sente then
         Writeln('Checkmate. Gote wins.')
       else
@@ -540,6 +690,7 @@ function SaveGame(
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock;
   FileName: string): boolean;
 var
   FileHandle: Text;
@@ -575,6 +726,10 @@ begin
     for Piece := None to King do
       Writeln(FileHandle, CapturedPieces[Player, Piece]);
 
+  Writeln(FileHandle, Ord(Clock.Enabled));
+  Writeln(FileHandle, Clock.RemainingMs[Sente]);
+  Writeln(FileHandle, Clock.RemainingMs[Gote]);
+
   Close(FileHandle);
   SaveGame := True;
 end;
@@ -584,12 +739,15 @@ function LoadGame(
   var CurrentPlayer: TPlayer;
   var DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock;
   FileName: string): boolean;
 var
   FileHandle: Text;
   PieceNum, OwnerNum, Row, Col: integer;
   Player: TPlayer;
   Piece: TPiece;
+  ClockEnabledValue: integer;
+  SenteTime, GoteTime: LongInt;
   ErrorCode: integer;
 begin
   LoadGame := False;
@@ -616,6 +774,19 @@ begin
   for Player := NoPlayer to Gote do
     for Piece := None to King do
       Readln(FileHandle, CapturedPieces[Player, Piece]);
+
+  if not Eof(FileHandle) then
+  begin
+    Readln(FileHandle, ClockEnabledValue);
+    Readln(FileHandle, SenteTime);
+    Readln(FileHandle, GoteTime);
+    Clock.Enabled := ClockEnabledValue <> 0;
+    Clock.RemainingMs[Sente] := SenteTime;
+    Clock.RemainingMs[Gote] := GoteTime;
+  end
+  else
+    InitializeClock(Clock, 0);
+  BeginClockTurn(Clock);
 
   Close(FileHandle);
   SetLastMove(0, 0);
