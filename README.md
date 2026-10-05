@@ -155,6 +155,13 @@ There are a few things to work on in order to make this a fully usable game. I h
 
 ### Gameplay Improvements
 
+- Kifu Addon
+  - Have the ability to loadin a past match through either .txt or markdown to be able to study matches, should fit fine on floppy for multiple
+  - in own folder so the program knows where to look for files
+- Tsume Addon
+  - Be able to load in tsumes from folder, similar idea from kifu, shouldl implement that first to check compatability
+  - allow a bot to be the opponent in these tsume
+
 ---
 
 ## License
