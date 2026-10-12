@@ -317,6 +317,10 @@ begin
     end;
   end;
 
+  RecordGameMove(AIPlayer, Moves[BestIndex].IsDrop,
+    Moves[BestIndex].FromCol, Moves[BestIndex].FromRow,
+    Moves[BestIndex].ToCol, Moves[BestIndex].ToRow,
+    Moves[BestIndex].Piece, Moves[BestIndex].Promote);
   ApplyMove(Board, Moves[BestIndex], AIPlayer, CapturedPieces);
   if Moves[BestIndex].IsDrop then
     SetLastMove(0, 0)
@@ -569,6 +573,8 @@ procedure PlaySelectedMove(
   Player: TPlayer;
   var CapturedPieces: TCapturedPieces);
 begin
+  RecordGameMove(Player, Move.IsDrop, Move.FromCol, Move.FromRow,
+    Move.ToCol, Move.ToRow, Move.Piece, Move.Promote);
   ApplyMove(Board, Move, Player, CapturedPieces);
   if Move.IsDrop then
     SetLastMove(0, 0)
