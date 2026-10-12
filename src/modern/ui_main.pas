@@ -2,15 +2,44 @@ unit ui_main;
 
 interface
 
-uses shogigam, aiopp, util, crt;
+uses shogigam, aiopp, util, kifu, crt, sysutils;
 
 procedure MainMenu;
 procedure SinglePlayerGame;
 procedure PlayerVsPlayer;
 procedure ResumeGame;
+procedure StudyKifu;
 procedure DisplayRules;
 
 implementation
+
+function FindKifuDirectory: string;
+var
+  BaseDirectory, Candidate: string;
+  Pass: integer;
+begin
+  FindKifuDirectory := '';
+  for Pass := 1 to 2 do
+  begin
+    if Pass = 1 then
+      BaseDirectory := ExpandFileName(GetCurrentDir)
+    else
+      BaseDirectory := ExtractFileDir(ExpandFileName(ParamStr(0)));
+    repeat
+    begin
+      Candidate := IncludeTrailingPathDelimiter(BaseDirectory) + 'kifu';
+      if DirectoryExists(Candidate) then
+      begin
+        FindKifuDirectory := IncludeTrailingPathDelimiter(Candidate);
+        Exit;
+      end;
+      Candidate := ExtractFileDir(BaseDirectory);
+      if Candidate = BaseDirectory then Break;
+      BaseDirectory := Candidate;
+    end
+    until False;
+  end;
+end;
 
 procedure SelectTimeControl(var Clock: TGameClock);
 var
@@ -41,6 +70,57 @@ begin
   InitializeClock(Clock, Minutes);
 end;
 
+function NumberedKifuName(Number: integer): string;
+var
+  Name: string;
+begin
+  Name := 'GAME000.CSA';
+  Name[5] := Chr(Ord('0') + (Number div 100));
+  Name[6] := Chr(Ord('0') + ((Number div 10) mod 10));
+  Name[7] := Chr(Ord('0') + (Number mod 10));
+  NumberedKifuName := Name;
+end;
+
+procedure OfferKifuExport;
+var
+  Input, KifuDirectory, FileName: string;
+  FileIndex: integer;
+begin
+  if not CanExportGameHistory then
+  begin
+    Writeln('Kifu export unavailable for this game history.');
+    PauseForUser;
+    Exit;
+  end;
+  Write('Save this game as a kifu? (Y/N): ');
+  Input := UpperString(GetStringInput);
+  if Input <> 'Y' then Exit;
+
+  KifuDirectory := FindKifuDirectory;
+  if KifuDirectory = '' then
+  begin
+    Writeln('Kifu folder not found.');
+    PauseForUser;
+    Exit;
+  end;
+  FileIndex := 1;
+  while (FileIndex <= 999) and
+      FileExists(KifuDirectory + NumberedKifuName(FileIndex)) do
+    FileIndex := FileIndex + 1;
+  if FileIndex > 999 then
+  begin
+    Writeln('No unused GAMEnnn.CSA filenames remain.');
+    PauseForUser;
+    Exit;
+  end;
+  FileName := NumberedKifuName(FileIndex);
+  if SaveKifuFile(KifuDirectory + FileName) then
+    Writeln('Saved kifu: ', FileName)
+  else
+    Writeln('Could not save kifu: ', FileName);
+  PauseForUser;
+end;
+
 procedure MainMenu;
 var
   UserChoice: integer;
@@ -53,8 +133,9 @@ begin
     WriteLine('1. Single Player vs AI', 2);
     WriteLine('2. Player vs Player', 4);
     WriteLine('3. Load saved game', 6);
-    WriteLine('4. Display Rules', 8);
-    WriteLine('5. Exit', 10);
+    WriteLine('4. Study kifu', 8);
+    WriteLine('5. Display Rules', 10);
+    WriteLine('6. Exit', 12);
 
     GotoXY(1, 22);
     Write('Select option: ');
@@ -65,8 +146,9 @@ begin
       1: SinglePlayerGame;
       2: PlayerVsPlayer;
       3: ResumeGame;
-      4: DisplayRules;
-      5: Halt;
+      4: StudyKifu;
+      5: DisplayRules;
+      6: Halt;
     end;
 
   until False;
@@ -120,7 +202,10 @@ begin
     if CurrentPlayer = Gote then
     begin
       if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+      begin
+        OfferKifuExport;
         Exit;
+      end;
 
       ClrScr;
       DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
@@ -149,6 +234,7 @@ begin
         else
           Writeln('Checkmate. Sente wins.');
         PauseForUser;
+        OfferKifuExport;
         Exit;
       end;
     end;
@@ -169,6 +255,8 @@ begin
   CurrentPlayer := Sente;
 
   PlayGame(Board, CurrentPlayer, 0, CapturedPieces, Clock);
+  if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+    OfferKifuExport;
 end;
 
 procedure ResumeGame;
@@ -199,6 +287,8 @@ begin
   if DifficultyLevel = 0 then
   begin
     PlayGame(Board, CurrentPlayer, DifficultyLevel, CapturedPieces, Clock);
+    if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+      OfferKifuExport;
     Exit;
   end;
 
@@ -209,7 +299,10 @@ begin
       Exit;
 
     if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+    begin
+      OfferKifuExport;
       Exit;
+    end;
 
     ClrScr;
     DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
@@ -237,8 +330,107 @@ begin
       else
         Writeln('Checkmate. Sente wins.');
       PauseForUser;
+      OfferKifuExport;
       Exit;
     end;
+  until False;
+end;
+
+procedure StudyKifu;
+var
+  Search: TSearchRec;
+  Moves: TKifuMoveList;
+  MoveCount, Ply, Index: integer;
+  Board: TBoard;
+  CurrentPlayer: TPlayer;
+  CapturedPieces: TCapturedPieces;
+  Clock: TGameClock;
+  FileName, Input, ErrorText: string;
+  KifuDirectory: string;
+  SearchResult: integer;
+  ValidFile: boolean;
+begin
+  KifuDirectory := FindKifuDirectory;
+  ClrScr;
+  CenterText('Kifu Studies');
+  Writeln;
+  Writeln('Files in kifu/:');
+  if KifuDirectory = '' then
+  begin
+    Writeln('Kifu folder not found.');
+    PauseForUser;
+    Exit;
+  end;
+  SearchResult := FindFirst(KifuDirectory + '*', faAnyFile, Search);
+  while SearchResult = 0 do
+  begin
+    Input := UpperString(ExtractFileExt(Search.Name));
+    if (Search.Name <> 'README.md') and
+      ((Input = '.TXT') or (Input = '.USI') or (Input = '.CSA')) and
+        ((Search.Attr and faDirectory) = 0) then
+      Writeln('  ', Search.Name);
+    SearchResult := FindNext(Search);
+  end;
+  FindClose(Search);
+  Writeln;
+  Write('Match filename (Q to return): ');
+  FileName := GetStringInput;
+  if UpperString(FileName) = 'Q' then Exit;
+  if (Pos('/', FileName) > 0) or (Pos('\', FileName) > 0) or
+      (Pos(':', FileName) > 0) or
+      (ExtractFileName(FileName) <> FileName) then
+  begin
+    Writeln('Enter a filename from the kifu/ folder only.');
+    PauseForUser;
+    Exit;
+  end;
+  FileName := KifuDirectory + FileName;
+  if not LoadKifu(FileName, Moves, MoveCount) then
+  begin
+    Writeln('Could not load a supported match file.');
+    PauseForUser;
+    Exit;
+  end;
+
+  Ply := 0;
+  InitializeClock(Clock, 0);
+  repeat
+    SetupBoard(Board);
+    ClearCapturedPieces(CapturedPieces);
+    CurrentPlayer := Sente;
+    ValidFile := True;
+    for Index := 1 to Ply do
+    begin
+      if not ApplyKifuMove(Board, CurrentPlayer, CapturedPieces,
+          Moves[Index], ErrorText) then
+      begin
+        ValidFile := False;
+        Break;
+      end;
+      if Moves[Index].IsDrop then
+        SetLastMove(0, 0)
+      else
+        SetLastMove(Moves[Index].FromCol, Moves[Index].FromRow);
+      SetLastMoveTarget(Moves[Index].ToCol, Moves[Index].ToRow);
+    end;
+    if not ValidFile then
+    begin
+      Writeln(ErrorText, ' At move ', Index, '.');
+      PauseForUser;
+      Exit;
+    end;
+
+    DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
+    GotoXY(1, 25);
+    Write('Ply ', Ply, '/', MoveCount,
+      '  N: next  P: previous  Q: quit  ');
+    Input := UpperString(GetStringInput);
+    if (Input = 'N') and (Ply < MoveCount) then
+      Ply := Ply + 1
+    else if (Input = 'P') and (Ply > 0) then
+      Ply := Ply - 1
+    else if Input = 'Q' then
+      Break;
   until False;
 end;
 
