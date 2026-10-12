@@ -15,6 +15,16 @@ procedure DisplayBoard(
   var Clock: TGameClock);
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
 procedure SetLastMove(FromCol, FromRow: integer);
+procedure SetLastMoveTarget(ToCol, ToRow: integer);
+procedure RecordGameMove(
+  Player: TPlayer;
+  IsDrop: boolean;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Piece: TPiece;
+  Promote: boolean);
+procedure ResetGameHistory;
+function CanExportGameHistory: boolean;
+function SaveKifuFile(FileName: string): boolean;
 procedure MakeMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
@@ -53,8 +63,21 @@ function LoadGame(
 
 implementation
 
+type
+  TRecordedMove = record
+    Player: TPlayer;
+    IsDrop: boolean;
+    FromCol, FromRow, ToCol, ToRow: integer;
+    Piece: TPiece;
+    Promote: boolean;
+  end;
+
 var
   LastMoveCol, LastMoveRow: integer;
+  LastMoveTargetCol, LastMoveTargetRow: integer;
+  RecordedMoveCount: integer;
+  GameHistoryAvailable: boolean;
+  RecordedMoves: array[1..512] of TRecordedMove;
 
 
 procedure SetupBoard(var Board: TBoard);
@@ -120,6 +143,8 @@ begin
     Board[Col,9].Owner := Sente;
 
   SetLastMove(0, 0);
+  SetLastMoveTarget(0, 0);
+  ResetGameHistory;
 
 end;
 
@@ -129,7 +154,7 @@ procedure DisplayBoard(
   var CapturedPieces: TCapturedPieces;
   var Clock: TGameClock);
 var
-  Row, Col, BoardLeft, BoardTop: integer;
+  Row, Col, BoardLeft, BoardTop, OriginalTextAttr: integer;
   Symbol: char;
   Piece: TPiece;
 begin
@@ -155,7 +180,12 @@ begin
       Symbol := PieceToChar(Board[Col, Row].Piece, Board[Col, Row].Owner);
       if (Col = LastMoveCol) and (Row = LastMoveRow) then
         Symbol := '#';
+      OriginalTextAttr := TextAttr;
+      if (Col = LastMoveTargetCol) and (Row = LastMoveTargetRow) then
+        TextAttr := TextAttr or $08;
       Write(' ', Symbol, ' |');
+      TextAttr := OriginalTextAttr;
+      SetLastMoveTarget(0, 0);
     end;
 
     Write(' ', Row:1);
@@ -246,6 +276,118 @@ procedure SetLastMove(FromCol, FromRow: integer);
 begin
   LastMoveCol := FromCol;
   LastMoveRow := FromRow;
+end;
+
+procedure SetLastMoveTarget(ToCol, ToRow: integer);
+begin
+  LastMoveTargetCol := ToCol;
+  LastMoveTargetRow := ToRow;
+end;
+
+procedure ResetGameHistory;
+begin
+  RecordedMoveCount := 0;
+  GameHistoryAvailable := True;
+end;
+
+function CanExportGameHistory: boolean;
+begin
+  CanExportGameHistory := GameHistoryAvailable and (RecordedMoveCount > 0);
+end;
+
+procedure RecordGameMove(
+  Player: TPlayer;
+  IsDrop: boolean;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Piece: TPiece;
+  Promote: boolean);
+begin
+  if not GameHistoryAvailable then Exit;
+  if RecordedMoveCount >= 512 then
+  begin
+    GameHistoryAvailable := False;
+    Exit;
+  end;
+  RecordedMoveCount := RecordedMoveCount + 1;
+  RecordedMoves[RecordedMoveCount].Player := Player;
+  RecordedMoves[RecordedMoveCount].IsDrop := IsDrop;
+  RecordedMoves[RecordedMoveCount].FromCol := FromCol;
+  RecordedMoves[RecordedMoveCount].FromRow := FromRow;
+  RecordedMoves[RecordedMoveCount].ToCol := ToCol;
+  RecordedMoves[RecordedMoveCount].ToRow := ToRow;
+  RecordedMoves[RecordedMoveCount].Piece := Piece;
+  RecordedMoves[RecordedMoveCount].Promote := Promote;
+end;
+
+function CsaPieceCode(Piece: TPiece): string;
+begin
+  CsaPieceCode := '??';
+  case Piece of
+    Pawn: CsaPieceCode := 'FU';
+    Lance: CsaPieceCode := 'KY';
+    Knight: CsaPieceCode := 'KE';
+    SilverGeneral: CsaPieceCode := 'GI';
+    GoldGeneral: CsaPieceCode := 'KI';
+    Bishop: CsaPieceCode := 'KA';
+    Rook: CsaPieceCode := 'HI';
+    King: CsaPieceCode := 'OU';
+    PromotedPawn: CsaPieceCode := 'TO';
+    PromotedLance: CsaPieceCode := 'NY';
+    PromotedKnight: CsaPieceCode := 'NK';
+    PromotedSilverGeneral: CsaPieceCode := 'NG';
+    DragonHorse: CsaPieceCode := 'UM';
+    DragonKing: CsaPieceCode := 'RY';
+  end;
+end;
+
+function SaveKifuFile(FileName: string): boolean;
+var
+  KifuFile: Text;
+  ErrorCode, Index, FromFile, ToFile: integer;
+  MovePiece: TPiece;
+begin
+  SaveKifuFile := False;
+  if not CanExportGameHistory then Exit;
+  Assign(KifuFile, FileName);
+  {$I-}
+  Rewrite(KifuFile);
+  ErrorCode := IOResult;
+  {$I+}
+  if ErrorCode <> 0 then Exit;
+
+  {$I-}
+  Writeln(KifuFile, 'V2.2');
+  Writeln(KifuFile, 'N+Sente');
+  Writeln(KifuFile, 'N-Gote');
+  Writeln(KifuFile, 'PI');
+  Writeln(KifuFile, '+');
+  for Index := 1 to RecordedMoveCount do
+  begin
+    if RecordedMoves[Index].Player = Sente then
+      Write(KifuFile, '+')
+    else
+      Write(KifuFile, '-');
+    if RecordedMoves[Index].IsDrop then
+      Write(KifuFile, '00')
+    else
+    begin
+      FromFile := 10 - RecordedMoves[Index].FromCol;
+      Write(KifuFile, Chr(Ord('0') + FromFile));
+      Write(KifuFile, Chr(Ord('0') + RecordedMoves[Index].FromRow));
+    end;
+    ToFile := 10 - RecordedMoves[Index].ToCol;
+    Write(KifuFile, Chr(Ord('0') + ToFile));
+    Write(KifuFile, Chr(Ord('0') + RecordedMoves[Index].ToRow));
+    MovePiece := RecordedMoves[Index].Piece;
+    if RecordedMoves[Index].Promote then
+      MovePiece := PromotePiece(MovePiece);
+    Write(KifuFile, CsaPieceCode(MovePiece));
+    Writeln(KifuFile);
+  end;
+  Close(KifuFile);
+  ErrorCode := IOResult;
+  {$I+}
+  SaveKifuFile := ErrorCode = 0;
 end;
 
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
@@ -506,6 +648,8 @@ begin
                   IsPawnDropMate(
                     Board, DropCol, DropRow, CurrentPlayer, CapturedPieces)) then
           begin
+            RecordGameMove(CurrentPlayer, True, 0, 0, DropCol, DropRow,
+              DropPiece, False);
             MakeDrop(Board, DropCol, DropRow, DropPiece,
               CapturedPieces, CurrentPlayer);
             MoveComplete := True;
@@ -633,6 +777,8 @@ begin
             PromotionChoice := (Input = 'Y');
           end;
 
+          RecordGameMove(CurrentPlayer, False, FromCol, FromRow, ToCol, ToRow,
+            Board[FromCol, FromRow].Piece, PromotionChoice);
           MakeMove(
             Board,
             FromCol,
@@ -790,6 +936,8 @@ begin
 
   Close(FileHandle);
   SetLastMove(0, 0);
+  RecordedMoveCount := 0;
+  GameHistoryAvailable := False;
   LoadGame := True;
 end;
 end.
