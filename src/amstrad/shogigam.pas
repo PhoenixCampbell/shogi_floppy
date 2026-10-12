@@ -2,7 +2,7 @@ unit shogigam;
 
 interface
 
-uses util, crt;
+uses util, crt, dos;
 
 const PieceValue: array[TPiece] of integer =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
@@ -11,9 +11,20 @@ procedure SetupBoard(var Board: TBoard);
 procedure DisplayBoard(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
 procedure SetLastMove(FromCol, FromRow: integer);
+procedure SetLastMoveTarget(ToCol, ToRow: integer);
+procedure RecordGameMove(
+  Player: TPlayer;
+  IsDrop: boolean;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Piece: TPiece;
+  Promote: boolean);
+procedure ResetGameHistory;
+function CanExportGameHistory: boolean;
+function SaveKifuFile(FileName: string): boolean;
 procedure MakeMove(
   var Board: TBoard;
   FromCol, FromRow, ToCol, ToRow: integer;
@@ -29,23 +40,44 @@ procedure PlayGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 procedure SwitchPlayer(var CurrentPlayer: TPlayer);
-procedure SaveGame(
+procedure InitializeClock(var Clock: TGameClock; Minutes: integer);
+procedure BeginClockTurn(var Clock: TGameClock);
+procedure UpdateClock(var Clock: TGameClock; CurrentPlayer: TPlayer);
+function SaveGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
-procedure LoadGame(
+  var Clock: TGameClock;
+  FileName: string): boolean;
+function LoadGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  var DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
+  var Clock: TGameClock;
+  FileName: string): boolean;
 
 implementation
 
+type
+  TRecordedMove = record
+    Player: TPlayer;
+    IsDrop: boolean;
+    FromCol, FromRow, ToCol, ToRow: integer;
+    Piece: TPiece;
+    Promote: boolean;
+  end;
+
 var
   LastMoveCol, LastMoveRow: integer;
+  LastMoveTargetCol, LastMoveTargetRow: integer;
+  RecordedMoveCount: integer;
+  GameHistoryAvailable: boolean;
+  RecordedMoves: array[1..512] of TRecordedMove;
 
 
 procedure SetupBoard(var Board: TBoard);
@@ -111,15 +143,18 @@ begin
     Board[Col,9].Owner := Sente;
 
   SetLastMove(0, 0);
+  SetLastMoveTarget(0, 0);
+  ResetGameHistory;
 
 end;
 
 procedure DisplayBoard(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 var
-  Row, Col, BoardLeft, BoardTop: integer;
+  Row, Col, BoardLeft, BoardTop, OriginalTextAttr: integer;
   Symbol: char;
   Piece: TPiece;
 begin
@@ -144,8 +179,12 @@ begin
     begin
       Symbol := PieceToChar(Board[Col, Row].Piece, Board[Col, Row].Owner);
       if (Col = LastMoveCol) and (Row = LastMoveRow) then
-        Symbol := '*';
+        Symbol := '#';
+      OriginalTextAttr := TextAttr;
+      if (Col = LastMoveTargetCol) and (Row = LastMoveTargetRow) then
+        TextAttr := TextAttr or $08;
       Write(' ', Symbol, ' |');
+      TextAttr := OriginalTextAttr;
     end;
 
     Write(' ', Row:1);
@@ -177,12 +216,174 @@ begin
     Writeln('Gote''s turn.');
 
   GotoXY(1, BoardTop + 22);
+  if Clock.Enabled then
+    Write('Sente ', Clock.RemainingMs[Sente] div 60000:2, ':',
+      (Clock.RemainingMs[Sente] div 1000) mod 60:2, '  Gote ',
+      Clock.RemainingMs[Gote] div 60000:2, ':',
+      (Clock.RemainingMs[Gote] div 1000) mod 60:2)
+  else
+    Write('No timer');
+
+  GotoXY(1, BoardTop + 23);
+end;
+
+procedure InitializeClock(var Clock: TGameClock; Minutes: integer);
+var
+  Hour, Minute, Second, Hundredth: Word;
+begin
+  Clock.Enabled := Minutes > 0;
+  Clock.RemainingMs[Sente] := LongInt(Minutes) * 60000;
+  Clock.RemainingMs[Gote] := LongInt(Minutes) * 60000;
+  Clock.RemainingMs[NoPlayer] := 0;
+  GetTime(Hour, Minute, Second, Hundredth);
+  Clock.LastTick := ((LongInt(Hour) * 60 + Minute) * 60 + Second) *
+    100 + Hundredth;
+end;
+
+procedure BeginClockTurn(var Clock: TGameClock);
+var
+  Hour, Minute, Second, Hundredth: Word;
+begin
+  GetTime(Hour, Minute, Second, Hundredth);
+  Clock.LastTick := ((LongInt(Hour) * 60 + Minute) * 60 + Second) *
+    100 + Hundredth;
+end;
+
+procedure UpdateClock(var Clock: TGameClock; CurrentPlayer: TPlayer);
+var
+  Hour, Minute, Second, Hundredth: Word;
+  NowTick, Elapsed: LongInt;
+begin
+  GetTime(Hour, Minute, Second, Hundredth);
+  NowTick := ((LongInt(Hour) * 60 + Minute) * 60 + Second) *
+    100 + Hundredth;
+  if Clock.Enabled and (CurrentPlayer <> NoPlayer) then
+  begin
+    Elapsed := NowTick - Clock.LastTick;
+    if Elapsed < 0 then
+      Elapsed := Elapsed + 8640000;
+    if Elapsed * 10 >= Clock.RemainingMs[CurrentPlayer] then
+      Clock.RemainingMs[CurrentPlayer] := 0
+    else
+      Clock.RemainingMs[CurrentPlayer] :=
+        Clock.RemainingMs[CurrentPlayer] - Elapsed * 10;
+  end;
+  Clock.LastTick := NowTick;
 end;
 
 procedure SetLastMove(FromCol, FromRow: integer);
 begin
   LastMoveCol := FromCol;
   LastMoveRow := FromRow;
+end;
+
+procedure SetLastMoveTarget(ToCol, ToRow: integer);
+begin
+  LastMoveTargetCol := ToCol;
+  LastMoveTargetRow := ToRow;
+end;
+
+procedure ResetGameHistory;
+begin
+  RecordedMoveCount := 0;
+  GameHistoryAvailable := True;
+end;
+
+function CanExportGameHistory: boolean;
+begin
+  CanExportGameHistory := GameHistoryAvailable and (RecordedMoveCount > 0);
+end;
+
+procedure RecordGameMove(
+  Player: TPlayer;
+  IsDrop: boolean;
+  FromCol, FromRow, ToCol, ToRow: integer;
+  Piece: TPiece;
+  Promote: boolean);
+begin
+  if not GameHistoryAvailable then Exit;
+  if RecordedMoveCount >= 512 then
+  begin
+    GameHistoryAvailable := False;
+    Exit;
+  end;
+  RecordedMoveCount := RecordedMoveCount + 1;
+  RecordedMoves[RecordedMoveCount].Player := Player;
+  RecordedMoves[RecordedMoveCount].IsDrop := IsDrop;
+  RecordedMoves[RecordedMoveCount].FromCol := FromCol;
+  RecordedMoves[RecordedMoveCount].FromRow := FromRow;
+  RecordedMoves[RecordedMoveCount].ToCol := ToCol;
+  RecordedMoves[RecordedMoveCount].ToRow := ToRow;
+  RecordedMoves[RecordedMoveCount].Piece := Piece;
+  RecordedMoves[RecordedMoveCount].Promote := Promote;
+end;
+
+function CsaPieceCode(Piece: TPiece): string;
+begin
+  CsaPieceCode := '??';
+  case Piece of
+    Pawn: CsaPieceCode := 'FU';
+    Lance: CsaPieceCode := 'KY';
+    Knight: CsaPieceCode := 'KE';
+    SilverGeneral: CsaPieceCode := 'GI';
+    GoldGeneral: CsaPieceCode := 'KI';
+    Bishop: CsaPieceCode := 'KA';
+    Rook: CsaPieceCode := 'HI';
+    King: CsaPieceCode := 'OU';
+    PromotedPawn: CsaPieceCode := 'TO';
+    PromotedLance: CsaPieceCode := 'NY';
+    PromotedKnight: CsaPieceCode := 'NK';
+    PromotedSilverGeneral: CsaPieceCode := 'NG';
+    DragonHorse: CsaPieceCode := 'UM';
+    DragonKing: CsaPieceCode := 'RY';
+  end;
+end;
+
+function SaveKifuFile(FileName: string): boolean;
+var
+  KifuFile: Text;
+  ErrorCode, Index, FromFile, ToFile: integer;
+  MovePiece: TPiece;
+begin
+  SaveKifuFile := False;
+  if not CanExportGameHistory then Exit;
+  Assign(KifuFile, FileName);
+  {$I-}
+  Rewrite(KifuFile);
+  ErrorCode := IOResult;
+  {$I+}
+  if ErrorCode <> 0 then Exit;
+
+  {$I-}
+  Writeln(KifuFile, 'V2.2');
+  Writeln(KifuFile, 'N+Sente');
+  Writeln(KifuFile, 'N-Gote');
+  Writeln(KifuFile, 'PI');
+  Writeln(KifuFile, '+');
+  for Index := 1 to RecordedMoveCount do
+  begin
+    if RecordedMoves[Index].Player = Sente then Write(KifuFile, '+')
+    else Write(KifuFile, '-');
+    if RecordedMoves[Index].IsDrop then Write(KifuFile, '00')
+    else
+    begin
+      FromFile := 10 - RecordedMoves[Index].FromCol;
+      Write(KifuFile, Chr(Ord('0') + FromFile));
+      Write(KifuFile, Chr(Ord('0') + RecordedMoves[Index].FromRow));
+    end;
+    ToFile := 10 - RecordedMoves[Index].ToCol;
+    Write(KifuFile, Chr(Ord('0') + ToFile));
+    Write(KifuFile, Chr(Ord('0') + RecordedMoves[Index].ToRow));
+    MovePiece := RecordedMoves[Index].Piece;
+    if RecordedMoves[Index].Promote then
+      MovePiece := PromotePiece(MovePiece);
+    Write(KifuFile, CsaPieceCode(MovePiece));
+    Writeln(KifuFile);
+  end;
+  Close(KifuFile);
+  ErrorCode := IOResult;
+  {$I+}
+  SaveKifuFile := ErrorCode = 0;
 end;
 
 procedure ClearCapturedPieces(var CapturedPieces: TCapturedPieces);
@@ -241,36 +442,146 @@ procedure PlayGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
   DifficultyLevel: byte;
-  var CapturedPieces: TCapturedPieces);
+  var CapturedPieces: TCapturedPieces;
+  var Clock: TGameClock);
 var
   FromCol, FromRow, ToCol, ToRow: integer;
+  CursorCol, CursorRow: integer;
   MoveComplete, PromotionChoice, InputValid: boolean;
   DropRequested: boolean;
   DropPiece: TPiece;
   DropCol, DropRow: integer;
   Input: string;
+  KeyAvailable: boolean;
+  function SelectSquare(var Col, Row: integer; Prompt: string): char;
+  var
+    Key: char;
+    OldAttr: byte;
+  begin
+    repeat
+      ClrScr;
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
+      GotoXY(22 + ((9 - Col) * 4), 4 + ((Row - 1) * 2));
+      OldAttr := TextAttr;
+      TextAttr := $70;
+      Write(' ', PieceToChar(Board[10 - Col, Row].Piece,
+        Board[10 - Col, Row].Owner));
+      Write(' ');
+      TextAttr := OldAttr;
+      GotoXY(1, 24);
+      Write(Prompt, ' ', Col, ', ', Row,
+        '  ENTER to select  ');
+
+      KeyAvailable := False;
+      while not KeyAvailable do
+      begin
+        if KeyPressed then
+          KeyAvailable := True
+        else
+        begin
+          Delay(100);
+          UpdateClock(Clock, CurrentPlayer);
+          if Clock.Enabled then
+          begin
+            GotoXY(1, 23);
+            Write('Sente ', Clock.RemainingMs[Sente] div 60000:2, ':',
+              (Clock.RemainingMs[Sente] div 1000) mod 60:2, '  Gote ',
+              Clock.RemainingMs[Gote] div 60000:2, ':',
+              (Clock.RemainingMs[Gote] div 1000) mod 60:2, '   ');
+            if Clock.RemainingMs[CurrentPlayer] = 0 then
+            begin
+              SelectSquare := #27;
+              Exit;
+            end;
+          end;
+        end;
+      end;
+      Key := ReadKey;
+      UpdateClock(Clock, CurrentPlayer);
+      if Clock.Enabled and (Clock.RemainingMs[CurrentPlayer] = 0) then
+      begin
+        SelectSquare := #27;
+        Exit;
+      end;
+      if Key = #0 then
+      begin
+        Key := ReadKey;
+        case Ord(Key) of
+          72: if Row > 1 then Row := Row - 1;
+          80: if Row < 9 then Row := Row + 1;
+          75: if Col < 9 then Col := Col + 1;
+          77: if Col > 1 then Col := Col - 1;
+        end;
+      end
+      else if Key = #13 then
+        SelectSquare := #0
+      else
+      begin
+        Key := UpCase(Key);
+        if (Key = 'D') or (Key = 'S') or (Key = 'R') or (Key = 'E') or
+           (Key = 'Q') or (Key = 'X') then
+        begin
+          SelectSquare := Key;
+          Exit;
+        end;
+      end;
+    until Key = #13;
+  end;
 begin
+  if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
+  begin
+    ClrScr;
+    DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
+    if CurrentPlayer = Sente then
+      Writeln('Checkmate. Gote wins.')
+    else
+      Writeln('Checkmate. Sente wins.');
+    PauseForUser;
+    Exit;
+  end;
+
+  CursorCol := 5;
+  CursorRow := 5;
+  BeginClockTurn(Clock);
   repeat
     MoveComplete := False;
     
     repeat
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       
       InputValid := True;
 
       (* Get From coordinates *)
-      Write('From where? (e.g. 9 9): ');
+      Input := SelectSquare(CursorCol, CursorRow, 'From where?');
 
-      Input := GetStringInput; (* Read input as string *)
-      Input := UpperString(Input);
-      
-      if (Input = 'RESIGN') or
-          (Input = 'END') or
-          (Input = 'QUIT') or
-          (Input = 'EXIT') then
+      if Input = #27 then
+      begin
+        ClrScr;
+        if CurrentPlayer = Sente then
+          Writeln('Time expired. Gote wins.')
+        else
+          Writeln('Time expired. Sente wins.');
+        PauseForUser;
+        Exit;
+      end;
+
+      if (Input = 'R') or (Input = 'E') or
+          (Input = 'Q') or (Input = 'X') then
       begin
         Exit;
+      end;
+
+      if Input = 'S' then
+      begin
+        UpdateClock(Clock, CurrentPlayer);
+        if SaveGame(Board, CurrentPlayer, DifficultyLevel,
+              CapturedPieces, Clock, 'shogi.sav') then
+          HandleError(2)
+        else
+          HandleError(3);
+        PauseForUser;
+        InputValid := False;
       end;
 
       DropRequested := Input = 'D';
@@ -279,6 +590,17 @@ begin
       begin
         Write('Piece to drop (P/L/N/S/G/B/R): ');
         Input := UpperString(GetStringInput);
+        UpdateClock(Clock, CurrentPlayer);
+        if Clock.Enabled and (Clock.RemainingMs[CurrentPlayer] = 0) then
+        begin
+          ClrScr;
+          if CurrentPlayer = Sente then
+            Writeln('Time expired. Gote wins.')
+          else
+            Writeln('Time expired. Sente wins.');
+          PauseForUser;
+          Exit;
+        end;
         if Length(Input) <> 1 then
           InputValid := False
         else
@@ -296,15 +618,34 @@ begin
         end
         else
         begin
-          Write('To where? (e.g. 9 8): ');
-          DropCol := 10 - GetIntegerInput;
-          DropRow := GetIntegerInput;
+          Input := SelectSquare(CursorCol, CursorRow, 'To where?');
+          if Input = #27 then
+          begin
+            ClrScr;
+            if CurrentPlayer = Sente then
+              Writeln('Time expired. Gote wins.')
+            else
+              Writeln('Time expired. Sente wins.');
+            PauseForUser;
+            Exit;
+          end;
+          if Input <> #0 then
+          begin
+            HandleError(1);
+            PauseForUser;
+            InputValid := False;
+          end;
+          DropCol := 10 - CursorCol;
+          DropRow := CursorRow;
 
-          if IsValidDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
+           if InputValid and
+             IsLegalDrop(Board, DropPiece, DropCol, DropRow, CurrentPlayer) and
              not ((DropPiece = Pawn) and
                   IsPawnDropMate(
                     Board, DropCol, DropRow, CurrentPlayer, CapturedPieces)) then
           begin
+            RecordGameMove(CurrentPlayer, True, 0, 0, DropCol, DropRow,
+              DropPiece, False);
             MakeDrop(Board, DropCol, DropRow, DropPiece,
               CapturedPieces, CurrentPlayer);
             MoveComplete := True;
@@ -317,12 +658,10 @@ begin
         end;
       end;
 
-      if (not DropRequested) and (not MoveComplete) then
+      if (Input <> 'S') and (not DropRequested) and (not MoveComplete) then
       begin
-      (* This gives the user on either side an option to resign or end the game without being trapped in the game *)
-      (* Otherwise, input gets shoved into the coordinate parsing *)
-      FromCol := 10 - StrToIntDef(Input, 0);
-      FromRow := GetIntegerInput;
+      FromCol := 10 - CursorCol;
+      FromRow := CursorRow;
       
       (* Validate From coordinates *)
       if not (InRange(FromCol, 1, 9) and
@@ -339,11 +678,28 @@ begin
       if InputValid then
       begin
         ClrScr;
-        DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+        DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
 
-        Write('To where? (e.g. 9 8): ');
-        ToCol := 10 - GetIntegerInput;
-        ToRow := GetIntegerInput;
+        Input := SelectSquare(CursorCol, CursorRow, 'To where?');
+        if Input = #27 then
+        begin
+          ClrScr;
+          if CurrentPlayer = Sente then
+            Writeln('Time expired. Gote wins.')
+          else
+            Writeln('Time expired. Sente wins.');
+          PauseForUser;
+          Exit;
+        end;
+        ToCol := 10 - CursorCol;
+        ToRow := CursorRow;
+
+        if Input <> #0 then
+        begin
+          HandleError(1);
+          PauseForUser;
+          InputValid := False;
+        end;
 
         (* Validate To coordinates *)
         if not (InRange(ToCol, 1, 9) and
@@ -391,6 +747,18 @@ begin
             repeat
               Write('Promote piece? (Y/N): ');
               Input := GetStringInput;
+              UpdateClock(Clock, CurrentPlayer);
+              if Clock.Enabled and
+                 (Clock.RemainingMs[CurrentPlayer] = 0) then
+              begin
+                ClrScr;
+                if CurrentPlayer = Sente then
+                  Writeln('Time expired. Gote wins.')
+                else
+                  Writeln('Time expired. Sente wins.');
+                PauseForUser;
+                Exit;
+              end;
               Input := UpperString(Input);
 
               if (Input <> 'Y') and
@@ -405,6 +773,8 @@ begin
             PromotionChoice := (Input = 'Y');
           end;
 
+          RecordGameMove(CurrentPlayer, False, FromCol, FromRow, ToCol, ToRow,
+            Board[FromCol, FromRow].Piece, PromotionChoice);
           MakeMove(
             Board,
             FromCol,
@@ -429,11 +799,12 @@ begin
     until MoveComplete;
 
     SwitchPlayer(CurrentPlayer);
+    BeginClockTurn(Clock);
 
     if IsCheckmate(Board, CurrentPlayer, CapturedPieces) then
     begin
       ClrScr;
-      DisplayBoard(Board, CurrentPlayer, CapturedPieces);
+      DisplayBoard(Board, CurrentPlayer, CapturedPieces, Clock);
       if CurrentPlayer = Sente then
         Writeln('Checkmate. Gote wins.')
       else
@@ -456,21 +827,31 @@ begin
     CurrentPlayer := Sente;
 end;
 
-procedure SaveGame(
+function SaveGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
+  var Clock: TGameClock;
+  FileName: string): boolean;
 var
   FileHandle: Text;
   Row, Col: integer;
   Player: TPlayer;
   Piece: TPiece;
+  ErrorCode: integer;
 begin
+  SaveGame := False;
   Assign(FileHandle, FileName);
+  {$I-}
   Rewrite(FileHandle);
+  ErrorCode := IOResult;
+  {$I+}
+  if ErrorCode <> 0 then
+    Exit;
 
   Writeln(FileHandle, Ord(CurrentPlayer));
+  Writeln(FileHandle, DifficultyLevel);
 
   for Row := 1 to 9 do
     for Col := 1 to 9 do
@@ -487,38 +868,107 @@ begin
     for Piece := None to King do
       Writeln(FileHandle, CapturedPieces[Player, Piece]);
 
+  Writeln(FileHandle, Ord(Clock.Enabled));
+  Writeln(FileHandle, Clock.RemainingMs[Sente]);
+  Writeln(FileHandle, Clock.RemainingMs[Gote]);
+
   Close(FileHandle);
+  SaveGame := True;
 end;
 
-procedure LoadGame(
+function LoadGame(
   var Board: TBoard;
   var CurrentPlayer: TPlayer;
+  var DifficultyLevel: byte;
   var CapturedPieces: TCapturedPieces;
-  FileName: string);
+  var Clock: TGameClock;
+  FileName: string): boolean;
 var
   FileHandle: Text;
   PieceNum, OwnerNum, Row, Col: integer;
+  DifficultyValue, Separator: integer;
   Player: TPlayer;
   Piece: TPiece;
+  ClockEnabledValue: integer;
+  SenteTime, GoteTime: LongInt;
+  ErrorCode: integer;
+  Line: string;
+  LegacyFormat: boolean;
 begin
+  LoadGame := False;
   Assign(FileHandle, FileName);
+  {$I-}
   Reset(FileHandle);
+  ErrorCode := IOResult;
+  {$I+}
+  if ErrorCode <> 0 then
+    Exit;
 
   Readln(FileHandle, PieceNum);
   CurrentPlayer := TPlayer(PieceNum);
+  Readln(FileHandle, Line);
+  Separator := Pos(' ', Line);
+  LegacyFormat := Separator > 0;
+  if LegacyFormat then
+  begin
+    Val(Copy(Line, 1, Separator - 1), PieceNum, ErrorCode);
+    if ErrorCode <> 0 then
+    begin
+      Close(FileHandle);
+      Exit;
+    end;
+    Val(Copy(Line, Separator + 1, Length(Line)), OwnerNum, ErrorCode);
+    if ErrorCode <> 0 then
+    begin
+      Close(FileHandle);
+      Exit;
+    end;
+    Board[1, 1].Piece := TPiece(PieceNum);
+    Board[1, 1].Owner := TPlayer(OwnerNum);
+    DifficultyLevel := 0;
+  end
+  else
+  begin
+    Val(Line, DifficultyValue, ErrorCode);
+    if (ErrorCode <> 0) or (DifficultyValue < 0) or
+        (DifficultyValue > 5) then
+    begin
+      Close(FileHandle);
+      Exit;
+    end;
+    DifficultyLevel := DifficultyValue;
+  end;
 
   for Row := 1 to 9 do
     for Col := 1 to 9 do
-    begin
-      Readln(FileHandle, PieceNum, OwnerNum);
-      Board[Col, Row].Piece := TPiece(PieceNum);
-      Board[Col, Row].Owner := TPlayer(OwnerNum);
-    end;
+      if not (LegacyFormat and (Row = 1) and (Col = 1)) then
+      begin
+        Readln(FileHandle, PieceNum, OwnerNum);
+        Board[Col, Row].Piece := TPiece(PieceNum);
+        Board[Col, Row].Owner := TPlayer(OwnerNum);
+      end;
 
   for Player := NoPlayer to Gote do
     for Piece := None to King do
       Readln(FileHandle, CapturedPieces[Player, Piece]);
 
+  if not Eof(FileHandle) then
+  begin
+    Readln(FileHandle, ClockEnabledValue);
+    Readln(FileHandle, SenteTime);
+    Readln(FileHandle, GoteTime);
+    Clock.Enabled := ClockEnabledValue <> 0;
+    Clock.RemainingMs[Sente] := SenteTime;
+    Clock.RemainingMs[Gote] := GoteTime;
+  end
+  else
+    InitializeClock(Clock, 0);
+  BeginClockTurn(Clock);
+
   Close(FileHandle);
+  SetLastMove(0, 0);
+  RecordedMoveCount := 0;
+  GameHistoryAvailable := False;
+  LoadGame := True;
 end;
 end.
