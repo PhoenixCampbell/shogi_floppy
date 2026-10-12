@@ -15,6 +15,11 @@ type
   end;
   TBoard = array[1..9, 1..9] of TSquare;
   TCapturedPieces = array[TPlayer, TPiece] of integer;
+  TGameClock = record
+    Enabled: boolean;
+    RemainingMs: array[TPlayer] of LongInt;
+    LastTick: LongInt;
+  end;
 function GetStringInput: string;
 function GetIntegerInput: integer;
 function StrToIntDef(S : string; Default : integer) : integer;
@@ -28,6 +33,11 @@ function PromotePiece(Piece: TPiece): TPiece;
 function UnpromotePiece(Piece: TPiece): TPiece;
 function IsInsideBoard(Col, Row: integer): boolean;
 function IsValidDrop(
+  var Board: TBoard;
+  Piece: TPiece;
+  Col, Row: integer;
+  CurrentPlayer: TPlayer): boolean;
+function IsLegalDrop(
   var Board: TBoard;
   Piece: TPiece;
   Col, Row: integer;
@@ -336,6 +346,23 @@ begin
         Exit;
 
   IsValidDrop := True;
+end;
+
+function IsLegalDrop(
+  var Board: TBoard;
+  Piece: TPiece;
+  Col, Row: integer;
+  CurrentPlayer: TPlayer): boolean;
+var
+  SimulatedBoard: TBoard;
+begin
+  IsLegalDrop := False;
+  if not IsValidDrop(Board, Piece, Col, Row, CurrentPlayer) then
+    Exit;
+  SimulatedBoard := Board;
+  SimulatedBoard[Col, Row].Piece := Piece;
+  SimulatedBoard[Col, Row].Owner := CurrentPlayer;
+  IsLegalDrop := not IsInCheck(SimulatedBoard, CurrentPlayer);
 end;
 
 function IsPseudoLegalMove(
