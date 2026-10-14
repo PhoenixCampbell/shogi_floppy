@@ -19,6 +19,7 @@ This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC
   - [Clone the Repository](#clone-the-repository)
   - [Copy Files to Floppy Disk](#copy-files-to-floppy-disk)
 - [Usage](#usage)
+- [Studying a Match](#studying-a-match)
 - [Project Structure](#project-structure)
 - [TODO List](#todo-list)
 - [Contributing](#contributing)
@@ -71,6 +72,7 @@ cp * /path/to/floppy/disk/
 - `ui_main.pas`: Handles user interface, including menus and gameplay options.
 - `ai_opponent.pas`: Contains logic for computer generated opponent for single player game.
 - `util.pas`: Contains all general functions and procedures in order to run the game.
+- `kifu.pas`: Contains all post-game files or kifu files that you downloaded online
 
 ## Usage
 
@@ -79,7 +81,7 @@ Link to compiler for download: [Free Pascal Compiler](https://www.freepascal.org
 
 Uses `fpc` instead of `tpc` when compiling programs.
 
-When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal 4.0 is needed to keep one floppy drive port free for the application disk. Link to this combo floppy will be available here when completed.
+When testing on actual Amstrad system, a recommended combination of MS-DOS and Turbo Pascal 4.0 is needed to keep one floppy drive port free for the application disk. Link to this combo floppy is available here:
 
 [Blog Post with Dev Img](https://phoenixcampbell.com/projects/pages/shogi.html)
 
@@ -143,6 +145,7 @@ for examples and limitations.
     - `ui_main.pas`: User interface and gameplay options.
     - `ai_opponent.pas`: Logic for computer opponent ranging in difficulty.
     - `util.pas`: Any utilities or general reusable functions to make the game easier to code.
+    - `kifu.pas`: Contains any gameplay files that would be used for review, learning, or showing to others
     - Any extra files are from compiling or are main executable. These .o, .ppu, and .exe files change with each compilation.
 
 ## Contributing
