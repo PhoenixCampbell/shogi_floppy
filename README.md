@@ -27,6 +27,8 @@ This is a Shogi game developed using Turbo Pascal originally for the Amstrad PPC
 
 ### Prerequisites
 
+(For contributing/editing/compiling use only, if you wish to just play, then download and run with instructions in [Usage](#usage) 'Running The Game')
+
 Ensure you have the following installed:
 
 - Turbo Pascal / Free Pascal (compatible with Amstrad PPC or similar newer systems)
