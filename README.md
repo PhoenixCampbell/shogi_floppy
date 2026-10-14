@@ -43,7 +43,7 @@ Ensure you have the following installed:
 
    ```sh
    git clone https://github.com/PhoenixCampbell/shogi_floppy.git
-   cd shogi-game
+   cd shogi_floppy/src/modern
    ```
 
 ### Copy Files to Floppy Disk
